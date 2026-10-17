@@ -15,7 +15,7 @@ import { CalidadTabComponent } from './calidad-tab.component';
   template: `
     <app-page-header
       title="Control de calidad de la leche"
-      description="Supervisión de temperatura, acidez y porcentaje de rechazos por proveedor de leche."
+      description="Cada entrega de leche con su fecha, litros, temperatura y acidez, y el resumen de rechazos por proveedor."
     />
 
     @if (esRutaAntigua()) {

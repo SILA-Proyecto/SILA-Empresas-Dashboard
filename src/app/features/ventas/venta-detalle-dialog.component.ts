@@ -6,18 +6,21 @@ import { HasRoleDirective } from '../../core/auth/has-role.directive';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { PapelTicketComponent } from '../../shared/ui/papel-ticket/papel-ticket.component';
+import { PapelTicketService } from '../../shared/services/papel-ticket.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
 import { imprimirTicket } from '../../shared/utils/imprimir';
 import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { VENTAS_REPOSITORY } from './data/ventas.provider';
+import { TicketVentaComponent } from './ticket-venta.component';
 import { VentaResumenComponent } from './venta-resumen.component';
 
 /** Detail of one sale; an ADMIN can annul it while it is PAGADA or PENDIENTE (reason of 10 to 255 characters). */
 @Component({
   selector: 'app-venta-detalle-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, DialogComponent, HasRoleDirective, IconComponent, VentaResumenComponent, VerComprobanteComponent],
+  imports: [ConfirmDialogComponent, DialogComponent, HasRoleDirective, IconComponent, PapelTicketComponent, TicketVentaComponent, VentaResumenComponent, VerComprobanteComponent],
   template: `
     <app-dialog [open]="idVenta() !== null" [title]="'Venta N.º ' + (idVenta() ?? '')" [wide]="true" (closed)="cerrar.emit()">
       @if (detalle.error()) {
@@ -27,6 +30,13 @@ import { VentaResumenComponent } from './venta-resumen.component';
         </div>
       } @else if (detalle.hasValue()) {
         <app-venta-resumen [detalle]="detalle.value()" />
+        <div class="mt-4 border-t border-border pt-4">
+          <app-papel-ticket />
+        </div>
+        <!-- The paper ticket is only drawn when printing; on screen the summary above is the view. -->
+        <div class="hidden print:block">
+          <app-ticket-venta [detalle]="detalle.value()" [ancho]="papel.ancho()" />
+        </div>
       } @else {
         <p class="py-6 text-center text-sm text-muted-foreground" aria-busy="true">Cargando…</p>
       }
@@ -63,6 +73,7 @@ export class VentaDetalleDialogComponent {
   private readonly toast = inject(ToastService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly papel = inject(PapelTicketService);
 
   readonly idVenta = input<number | null>(null);
   readonly cerrar = output<void>();
@@ -86,7 +97,7 @@ export class VentaDetalleDialogComponent {
   });
 
   protected imprimir(): void {
-    imprimirTicket();
+    imprimirTicket(this.papel.ancho());
   }
 
   protected anular(motivo: string): void {

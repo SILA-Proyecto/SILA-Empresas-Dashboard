@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, e
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ApiErrorService } from '../../core/api/api-error';
+import { ClienteSelectorComponent } from '../../shared/ui/cliente-selector/cliente-selector.component';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
+import type { Cliente } from '../catalogos/models/catalogos.models';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { OpcionSelector, SelectorBuscableComponent } from '../../shared/ui/selector-buscable/selector-buscable.component';
 import { redondear2 } from '../../shared/utils/dinero';
@@ -17,18 +19,25 @@ import type { PrecioCliente } from './models/precios-cliente.models';
 @Component({
   selector: 'app-precio-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule, SelectorBuscableComponent],
+  imports: [ClienteSelectorComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule, SelectorBuscableComponent],
   template: `
     <app-dialog
       [open]="abierto()"
       [title]="existente() ? 'Editar precio pactado' : 'Nuevo acuerdo de precio'"
-      [description]="'Cliente: ' + nombreCliente()"
+      [description]="idCliente() !== null ? 'Cliente: ' + nombreCliente() : 'Elige el cliente y el producto.'"
       [cerrable]="!guardando()"
       (closed)="cerrar.emit()"
     >
       <form id="precio-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate class="space-y-4">
         @if (errorGeneral(); as mensaje) {
           <p role="alert" class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">{{ mensaje }}</p>
+        }
+        @if (idCliente() === null) {
+          <div class="space-y-1.5">
+            <label for="precio-cliente-nuevo" class="text-sm font-medium">Cliente <span class="text-destructive" aria-hidden="true">*</span></label>
+            <app-cliente-selector idCampo="precio-cliente-nuevo" [etiquetaVacia]="null" (clienteElegido)="clienteNuevo.set($event)" />
+            <p class="text-xs font-medium text-destructive" aria-live="polite">{{ errorCliente() }}</p>
+          </div>
         }
         <div class="space-y-1.5">
           <label for="precio-producto" class="text-sm font-medium">Producto <span class="text-destructive" aria-hidden="true">*</span></label>
@@ -77,7 +86,8 @@ export class PrecioDialogComponent {
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   readonly abierto = input(false);
-  readonly idCliente = input.required<number>();
+  /** The client of the agreement. `null` = not chosen yet: the dialog asks for it (new agreement from the list of all clients). */
+  readonly idCliente = input.required<number | null>();
   readonly nombreCliente = input('');
   readonly productos = input.required<readonly ProductoOpcion[]>();
   /** When set, its price is being edited. */
@@ -91,6 +101,8 @@ export class PrecioDialogComponent {
   protected readonly errorGeneral = signal<string | null>(null);
   protected readonly producto = signal<number | null>(null);
   private readonly productoTocado = signal(false);
+  protected readonly clienteNuevo = signal<Cliente | null>(null);
+  protected readonly errorCliente = computed(() => (this.productoTocado() && this.idCliente() === null && this.clienteNuevo() === null ? 'Elige el cliente.' : null));
   protected readonly atajo = signal('');
 
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -121,6 +133,7 @@ export class PrecioDialogComponent {
         this.form.reset({ precio: e ? e.precio : null });
         this.producto.set(e ? e.id_producto : null);
         this.productoTocado.set(false);
+        this.clienteNuevo.set(null);
         this.errorGeneral.set(null);
         this.guardando.set(false);
         this.atajo.set('');
@@ -144,14 +157,15 @@ export class PrecioDialogComponent {
     this.form.markAllAsTouched();
     this.productoTocado.set(true);
     const producto = this.producto();
-    if (this.form.invalid || producto === null) {
+    const cliente = this.idCliente() ?? this.clienteNuevo()?.id_cliente ?? null;
+    if (this.form.invalid || producto === null || cliente === null) {
       setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
       return;
     }
     this.guardando.set(true);
     this.errorGeneral.set(null);
     this.repo
-      .fijar({ id_cliente: this.idCliente(), id_producto: producto, precio: Number(this.form.getRawValue().precio) })
+      .fijar({ id_cliente: cliente, id_producto: producto, precio: Number(this.form.getRawValue().precio) })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (precio) => {

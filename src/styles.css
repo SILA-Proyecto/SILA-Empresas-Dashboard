@@ -226,3 +226,43 @@ body.sila-sin-scroll {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+
+/* ------------------------------------------------------------------ */
+/* Thermal ticket (58 / 80 mm roll). On screen it looks like the paper; printed it is the whole page. */
+/* ------------------------------------------------------------------ */
+.ticket-termico {
+  box-sizing: border-box;
+  padding: 4mm;
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+}
+.ticket-termico.ticket-58 {
+  padding: 3mm;
+  font-size: 10.5px;
+}
+.ticket-termico .ticket-titulo {
+  font-size: 1.35em;
+}
+.ticket-termico .ticket-total {
+  font-size: 1.2em;
+}
+.ticket-termico .ticket-pequeno {
+  font-size: 0.85em;
+}
+.ticket-termico .ticket-linea {
+  margin: 6px 0;
+  border: 0;
+  border-top: 1px dashed #000;
+}
+
+@media print {
+  /* The page is exactly the roll (`@page` is set when printing): no shadow, no centring, no extra margin. */
+  body.imprimiendo-ticket .ticket-termico {
+    margin: 0 !important;
+    box-shadow: none;
+    font-family: ui-monospace, 'Courier New', monospace;
+    break-inside: avoid;
+  }
+}

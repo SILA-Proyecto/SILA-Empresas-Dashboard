@@ -1,19 +1,55 @@
 <app-page-header title="Punto de venta" description="Arma el ticket, elige cómo se paga y cobra. El servidor calcula los precios y los totales definitivos." />
 
 @if (confirmada(); as venta) {
-  <section class="sila-card mx-auto max-w-2xl p-6" aria-labelledby="venta-ok-titulo" data-testid="venta-confirmada">
-    <div class="mb-4 flex items-center gap-2">
-      <app-icon name="lucideCircleCheck" class="size-6 text-success" aria-hidden="true" />
-      <h2 id="venta-ok-titulo" class="text-lg font-semibold">Venta registrada</h2>
+  <section class="mx-auto grid max-w-4xl items-start gap-6 md:grid-cols-[minmax(0,1fr)_auto]" aria-labelledby="venta-ok-titulo" data-testid="venta-confirmada">
+    <div class="sila-card space-y-5 p-5 sm:p-6">
+      <div class="flex items-center gap-3">
+        <span class="flex size-12 shrink-0 items-center justify-center rounded-full bg-success/15">
+          <app-icon name="lucideCircleCheck" class="size-7 text-success" aria-hidden="true" />
+        </span>
+        <div class="min-w-0">
+          <h2 id="venta-ok-titulo" class="text-xl font-semibold">Venta registrada</h2>
+          <p class="text-sm text-muted-foreground">N.º {{ venta.venta.id_venta }} · {{ venta.venta.cliente }}</p>
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-muted px-4 py-3">
+        <p class="text-sm text-muted-foreground">Total de la venta</p>
+        <p class="text-3xl font-bold tabular-nums" data-testid="total-venta-confirmada">{{ cop(venta.venta.total_venta) }}</p>
+        @if (venta.venta.tipo_venta === 'CREDITO') {
+          <p class="mt-1 text-sm">A crédito: queda debiendo <strong class="tabular-nums">{{ cop(venta.venta.saldo_pendiente) }}</strong>.</p>
+        }
+      </div>
+
+      @if (venta.pagos.length > 0) {
+        <div>
+          <h3 class="mb-1 text-sm font-medium text-muted-foreground">Cómo pagó</h3>
+          <ul class="space-y-1 text-sm">
+            @for (p of venta.pagos; track p.id_pago) {
+              <li class="flex justify-between gap-4"><span>{{ etiquetaPago(p.metodo_pago) }}</span><span class="tabular-nums">{{ cop(p.monto) }}</span></li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="sila-btn sila-btn-primary min-h-11" (click)="nuevaVenta()">Nueva venta</button>
+        <button type="button" class="sila-btn sila-btn-outline min-h-11" (click)="imprimir()">
+          <app-icon name="lucidePrinter" class="size-4" aria-hidden="true" />
+          Imprimir ticket
+        </button>
+        <a routerLink="/ventas" class="sila-btn sila-btn-ghost min-h-11">Ver en el historial</a>
+      </div>
+
+      <div class="border-t border-border pt-4">
+        <app-papel-ticket />
+        <p class="mt-2 text-xs text-muted-foreground">Elige el mismo papel que tiene la impresora. Al imprimir, escoge la impresora de tickets y desactiva «Encabezados y pies de página».</p>
+      </div>
     </div>
-    <app-venta-resumen [detalle]="venta" />
-    <div class="mt-6 flex flex-wrap gap-2">
-      <button type="button" class="sila-btn sila-btn-primary" (click)="nuevaVenta()">Nueva venta</button>
-      <button type="button" class="sila-btn sila-btn-outline" (click)="imprimir()">
-        <app-icon name="lucidePrinter" class="size-4" aria-hidden="true" />
-        Imprimir ticket
-      </button>
-      <a routerLink="/ventas" class="sila-btn sila-btn-ghost">Ver en el historial</a>
+
+    <!-- What will be printed, as it will look on the roll. -->
+    <div class="max-w-full overflow-x-auto pb-2">
+      <app-ticket-venta [detalle]="venta" [ancho]="papel.ancho()" />
     </div>
   </section>
 } @else {

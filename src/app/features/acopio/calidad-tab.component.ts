@@ -9,6 +9,7 @@ import { ChipTono, StatusChipComponent } from '../../shared/ui/status-chip/statu
 import { formatoNumero } from '../../shared/utils/formato-co';
 import { crearListado } from '../../shared/utils/listado';
 import { ACOPIO_REPOSITORY } from './data/acopio.provider';
+import { EntregasLecheComponent } from './entregas-leche.component';
 import type { CalidadProveedor } from './models/acopio.models';
 
 /**
@@ -25,7 +26,7 @@ export function tonoRechazo(porcentaje: number): ChipTono {
 @Component({
   selector: 'app-calidad-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, IconComponent, RouterLink, ServerDataTableComponent, StatusChipComponent],
+  imports: [DataTableCellDirective, EntregasLecheComponent, IconComponent, RouterLink, ServerDataTableComponent, StatusChipComponent],
   template: `
     @if (umbrales.value(); as u) {
       <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4" data-testid="tarjeta-umbrales">
@@ -43,6 +44,9 @@ export function tonoRechazo(porcentaje: number): ChipTono {
       </div>
     }
 
+    <app-entregas-leche [umbrales]="umbrales.hasValue() ? umbrales.value() : null" />
+
+    <h3 class="mb-1 text-base font-semibold">Resumen por proveedor</h3>
     <p class="mb-3 text-sm text-muted-foreground">
       Promedios y rechazos por proveedor, con todas sus entregas. El porcentaje se marca en rojo por encima de {{ peligro }} % y en ámbar por encima de {{ alerta }} %.
     </p>

@@ -7,17 +7,14 @@ import { chipEstadoPago, etiquetaMetodo, etiquetaTipoVenta } from './ventas.form
 
 /**
  * A sale exactly as the SERVER has it: header, lines, payments and (credit) due date and balance.
- * Printed as the ticket (the wrapper carries `.zona-impresion-ticket`).
+ * It is the on-screen view only: the paper ticket is `app-ticket-venta`.
  */
 @Component({
   selector: 'app-venta-resumen',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [StatusChipComponent],
   template: `
-    <div class="zona-impresion-ticket space-y-4 text-sm">
-      <div class="hidden print:block">
-        <p class="text-base font-bold">Llanolat · SILA</p>
-      </div>
+    <div class="space-y-4 text-sm">
       @let v = detalle().venta;
       <dl class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
         <div>

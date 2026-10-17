@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
 import type { Cliente } from '../catalogos/models/catalogos.models';
@@ -25,7 +25,7 @@ import { PrecioDialogComponent } from './precio-dialog.component';
   imports: [ClienteSelectorComponent, ConfirmDialogComponent, DataTableCellDirective, IconComponent, PageHeaderComponent, PrecioDialogComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
     <app-page-header title="Precios por cliente" description="Acuerdos de precio fijo de un producto con un cliente. Se aplican solos en el punto de venta.">
-      <button type="button" class="sila-btn sila-btn-primary shrink-0" [disabled]="!cliente()" (click)="abrirNuevo()">
+      <button type="button" class="sila-btn sila-btn-primary shrink-0" (click)="abrirNuevo()">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
         Nuevo acuerdo
       </button>
@@ -34,7 +34,7 @@ import { PrecioDialogComponent } from './precio-dialog.component';
     <div class="mb-4 flex flex-wrap items-end gap-4">
       <div class="w-full sm:w-96">
         <label for="precios-cliente" class="mb-1 block text-xs font-medium text-muted-foreground">Cliente</label>
-        <app-cliente-selector idCampo="precios-cliente" [etiquetaVacia]="null" (clienteElegido)="cliente.set($event)" />
+        <app-cliente-selector idCampo="precios-cliente" (clienteElegido)="cliente.set($event)" />
       </div>
       <label class="flex items-center gap-2 pb-2 text-sm">
         <input type="checkbox" class="size-4" [checked]="verDesactivados()" (change)="verDesactivados.set($any($event.target).checked)" />
@@ -43,24 +43,22 @@ import { PrecioDialogComponent } from './precio-dialog.component';
     </div>
     <p class="mb-4 text-xs text-muted-foreground">Si el precio de lista cambia después, el precio pactado no se mueve hasta que lo renegocies.</p>
 
-    @if (!cliente()) {
-      <p class="sila-card p-8 text-center text-sm text-muted-foreground">Elige un cliente para ver sus precios pactados.</p>
-    } @else {
-      <app-server-data-table
-        titulo="Precios pactados"
-        [columns]="columnas"
+    <app-server-data-table
+        [titulo]="cliente() ? 'Precios pactados de ' + cliente()!.nombre : 'Precios pactados de todos los clientes'"
+        [columns]="columnas()"
         [page]="listado.datos()"
         [rowId]="precioId"
         [cargando]="listado.cargando()"
         [error]="listado.error()"
         [sort]="listado.sort()"
-        vacioTitulo="Este cliente no tiene precios pactados"
-        vacioAyuda="Crea un acuerdo con «Nuevo acuerdo»: mientras no exista, se le cobra el precio de lista."
+        [vacioTitulo]="cliente() ? 'Este cliente no tiene precios pactados' : 'Todavía no hay precios pactados'"
+        vacioAyuda="Crea un acuerdo con «Nuevo acuerdo»: mientras no exista, se cobra el precio de lista."
         (pageChange)="listado.irAPagina($event)"
         (sizeChange)="listado.cambiarTamano($event)"
         (sortChange)="listado.sort.set($event)"
         (reintentar)="listado.recargar()"
       >
+        <ng-template appDataTableCell="cliente" [cellRows]="listado.datos()?.items" let-p><span class="font-medium">{{ p.cliente }}</span></ng-template>
         <ng-template appDataTableCell="precio_base" [cellRows]="listado.datos()?.items" let-p><span class="tabular-nums">{{ cop(p.precio_base) }}</span></ng-template>
         <ng-template appDataTableCell="precio" [cellRows]="listado.datos()?.items" let-p><span class="font-medium tabular-nums">{{ cop(p.precio) }}</span></ng-template>
         <ng-template appDataTableCell="diferencia" [cellRows]="listado.datos()?.items" let-p>
@@ -80,24 +78,21 @@ import { PrecioDialogComponent } from './precio-dialog.component';
           </div>
         </ng-template>
       </app-server-data-table>
-    }
 
-    @if (cliente(); as c) {
-      <app-precio-dialog
-        [abierto]="dialogoNuevo() || editando() !== null"
-        [idCliente]="c.id_cliente"
-        [nombreCliente]="c.nombre"
-        [productos]="productos.productos()"
-        [existente]="editando()"
-        (guardado)="alGuardar($event)"
-        (cerrar)="dialogoNuevo.set(false); editando.set(null)"
-      />
-    }
+    <app-precio-dialog
+      [abierto]="dialogoNuevo() || editando() !== null"
+      [idCliente]="editando()?.id_cliente ?? cliente()?.id_cliente ?? null"
+      [nombreCliente]="editando()?.cliente ?? cliente()?.nombre ?? ''"
+      [productos]="productos.productos()"
+      [existente]="editando()"
+      (guardado)="alGuardar($event)"
+      (cerrar)="dialogoNuevo.set(false); editando.set(null)"
+    />
 
     <app-confirm-dialog
       [open]="desactivando() !== null"
       titulo="Desactivar acuerdo"
-      [mensaje]="'A ' + (cliente()?.nombre ?? 'este cliente') + ' se le volverá a cobrar el precio de lista de «' + (desactivando()?.producto ?? '') + '». Para reactivarlo hay que fijar el precio otra vez.'"
+      [mensaje]="'A ' + (desactivando()?.cliente ?? 'este cliente') + ' se le volverá a cobrar el precio de lista de «' + (desactivando()?.producto ?? '') + '». Para reactivarlo hay que fijar el precio otra vez.'"
       textoConfirmar="Desactivar"
       [peligro]="true"
       [ocupado]="ocupado()"
@@ -125,19 +120,22 @@ export class PreciosClientePageComponent {
   protected readonly listado = crearListado({
     filtros: () => ({ id_cliente: this.cliente()?.id_cliente, activo: this.verDesactivados() ? undefined : true }),
     cargar: (query) => this.repo.listar(query),
-    sort: 'producto,asc',
-    habilitado: () => this.cliente() !== null,
+    sort: 'cliente,asc',
+    // So the agreements of all the clients are on screen at once.
+    tamanoInicial: 50,
   });
 
   // Only the sort fields the contract lists are sortable (cliente, producto, precio, diferencia).
-  protected readonly columnas: DataTableColumn<PrecioCliente>[] = [
+  protected readonly columnas = computed<DataTableColumn<PrecioCliente>[]>(() => [
+    // With one client chosen the column would repeat the same name in every row.
+    ...(this.cliente() ? [] : [{ key: 'cliente', label: 'Cliente', value: (p: PrecioCliente) => p.cliente }]),
     { key: 'producto', label: 'Producto', value: (p) => p.producto },
     { key: 'precio_base', label: 'Precio de lista', align: 'end', sortable: false, value: (p) => p.precio_base },
     { key: 'precio', label: 'Precio pactado', align: 'end', value: (p) => p.precio },
     { key: 'diferencia', label: 'Diferencia', align: 'end', value: (p) => p.diferencia },
     { key: 'activo', label: 'Estado', sortable: false, value: (p) => (p.activo ? 'Activo' : 'Desactivado') },
     { key: 'acciones', label: 'Acciones', sortable: false, value: () => '' },
-  ];
+  ]);
   protected readonly precioId = (p: PrecioCliente) => p.id_precio;
 
   protected abs(n: number): number {

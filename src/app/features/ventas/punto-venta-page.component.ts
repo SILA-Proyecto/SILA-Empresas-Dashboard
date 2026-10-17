@@ -7,6 +7,8 @@ import { ClaveIdempotente } from '../../core/api/idempotencia';
 import { ClienteSelectorComponent } from '../../shared/ui/cliente-selector/cliente-selector.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
+import { PapelTicketComponent } from '../../shared/ui/papel-ticket/papel-ticket.component';
+import { PapelTicketService } from '../../shared/services/papel-ticket.service';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
 import { formatoCop, formatoNumero } from '../../shared/utils/formato-co';
 import { imprimirTicket } from '../../shared/utils/imprimir';
@@ -17,8 +19,8 @@ import { PARAMETROS_REPOSITORY } from '../parametros/data/parametros.provider';
 import { VENTAS_REPOSITORY } from './data/ventas.provider';
 import type { MetodoPago, PrecioAplicable, TipoVenta, VentaDetalle } from './models/ventas.models';
 import { LineaTicket, PagoFila, armarVenta, aNumero, cambioDe, cantidadValida, efectivoAplicado, faltante, montoDePago, totalPagado, totalesTicket } from './ticket.calculos';
-import { VentaResumenComponent } from './venta-resumen.component';
-import { METODOS_PAGO } from './ventas.format';
+import { TicketVentaComponent } from './ticket-venta.component';
+import { METODOS_PAGO, etiquetaMetodo } from './ventas.format';
 import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 const DOCUMENTO_CONSUMIDOR_FINAL = '222222222222';
@@ -32,7 +34,7 @@ const pagoNuevo = (metodo: MetodoPago = 'EFECTIVO', montoTexto = ''): PagoFila =
 @Component({
   selector: 'app-punto-venta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClienteSelectorComponent, IconComponent, PageHeaderComponent, RouterLink, VentaResumenComponent],
+  imports: [ClienteSelectorComponent, IconComponent, PageHeaderComponent, PapelTicketComponent, RouterLink, TicketVentaComponent],
   templateUrl: './punto-venta-page.component.html',
 })
 export class PuntoVentaPageComponent {
@@ -44,6 +46,8 @@ export class PuntoVentaPageComponent {
   private readonly buscador = viewChild<ElementRef<HTMLInputElement>>('buscador');
 
   protected readonly cop = formatoCop;
+  protected readonly papel = inject(PapelTicketService);
+  protected readonly etiquetaPago = etiquetaMetodo;
   protected readonly numero = formatoNumero;
   protected readonly metodos = METODOS_PAGO;
   protected readonly maxPagos = MAX_PAGOS;
@@ -321,6 +325,6 @@ export class PuntoVentaPageComponent {
   }
 
   protected imprimir(): void {
-    imprimirTicket();
+    imprimirTicket(this.papel.ancho());
   }
 }
