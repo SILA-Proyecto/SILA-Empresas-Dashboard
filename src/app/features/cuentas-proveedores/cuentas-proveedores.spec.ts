@@ -269,6 +269,19 @@ describe('Cuentas con proveedores', () => {
     expect(raiz(f).querySelector('[data-testid=ver-comprobante]')).not.toBeNull();
   });
 
+  it('saldos: los totales suman TODOS los proveedores, también cuando hay más de 100 (la API entrega 100 por página)', async () => {
+    const todos = Array.from({ length: 150 }, (_, i) => ({ ...SALDO, id_proveedor: i + 1, proveedor: `Proveedor ${i + 1}`, total_comprado: 1000, total_pagado: 400, saldo: 600 }));
+    repo['saldos'] = vi.fn(({ page = 0, size = 10 }: { page?: number; size?: number }) => of({ items: todos.slice(page * size, (page + 1) * size), total: 150, page, size, pages: Math.ceil(150 / size) }));
+    entrar('ADMIN');
+    const f = TestBed.createComponent(SaldosTabComponent);
+    await estabilizar(f);
+
+    const texto = (raiz(f).textContent ?? '').replace(/\s+/g, ' ');
+    expect(texto).toContain('$ 150.000'); // comprado: 150 × 1.000
+    expect(texto).toContain('$ 60.000'); // pagado: 150 × 400
+    expect(texto).toContain('$ 90.000'); // se debe: 150 × 600
+  });
+
   it('precios: «Cambiar precio» abre el formulario con el proveedor y la materia prima de esa fila', async () => {
     repo['listarPrecios'] = vi.fn(() => of({ items: [PRECIO], total: 1, page: 0, size: 10, pages: 1 }));
     TestBed.overrideProvider(CATALOGOS_REPOSITORY, { useValue: { listarProveedores: () => of({ items: [{ id_proveedor: 3, nombre: 'Finca' }], total: 1, page: 0, size: 100, pages: 1 }) } });

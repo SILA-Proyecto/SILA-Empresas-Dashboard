@@ -19,13 +19,11 @@ export const appConfig: ApplicationConfig = {
     // Signing out in one tab signs out the others.
     provideAppInitializer(() => void inject(SincronizacionPestanas)),
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
-    // Every Lucide icon is available by name without listing them one by one.
-    // The whole set is a single lazy chunk instead of ~870 kB in the initial
-    // bundle: the dynamic import resolves once, then `withCaching()` keeps each
-    // resolved icon in memory.
+    // Only the icons listed in shared/ui/icon/iconos.ts (about 80 of Lucide's ~1,990), in one small lazy chunk;
+    // `withCaching()` keeps each resolved icon in memory.
     provideNgIconLoader(async (name) => {
-      const icons = (await import('@ng-icons/lucide')) as unknown as Record<string, string>;
-      return icons[name] ?? '';
+      const { ICONOS } = await import('./shared/ui/icon/iconos');
+      return (ICONOS as Record<string, string>)[name] ?? '';
     }, withCaching()),
   ],
 };

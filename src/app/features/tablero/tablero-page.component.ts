@@ -117,7 +117,12 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
       <section class="mb-8" aria-labelledby="tb-semana">
         <h2 id="tb-semana" class="mb-3 text-base font-semibold">Ventas de los últimos 7 días</h2>
         <div class="sila-card p-3 sm:p-4">
-          <app-ventas-semana-chart [semana]="t.ventas_semana" />
+          <!-- The chart library (~220 KB) is fetched when this block nears the screen, not with the page. -->
+          @defer (on viewport) {
+            <app-ventas-semana-chart [semana]="t.ventas_semana" />
+          } @placeholder {
+            <div class="flex h-64 items-center justify-center text-sm text-muted-foreground" aria-busy="true">Cargando gráfica…</div>
+          }
         </div>
       </section>
 

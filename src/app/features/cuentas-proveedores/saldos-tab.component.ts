@@ -16,6 +16,7 @@ import type { PagoProveedor, SaldoProveedor } from './models/cuentas-proveedores
 import { PagoProveedorDialogComponent } from './pago-proveedor-dialog.component';
 import { ComprasProveedorTablaComponent } from './compras-proveedor-tabla.component';
 import { PagosTablaComponent } from './pagos-tabla.component';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 @Component({
   selector: 'app-saldos-tab',
@@ -193,7 +194,8 @@ export class SaldosTabComponent {
   protected readonly version = signal(0);
 
   protected readonly resumenTotales = rxResource({
-    stream: () => this.repo.saldos({ page: 0, size: 100 }),
+    // Every provider, not just the first page: the three totals must add up all of them.
+    stream: () => todasLasPaginas((q) => this.repo.saldos(q)),
   });
 
   protected readonly totales = computed(() => {
@@ -211,7 +213,7 @@ export class SaldosTabComponent {
 
   protected readonly quincenas = rxResource({
     params: () => this.detalle()?.id_proveedor,
-    stream: ({ params: idProveedor }) => this.repo.resumen({ id_proveedor: idProveedor, page: 0, size: 50, sort: 'id_periodo,asc' }),
+    stream: ({ params: idProveedor }) => todasLasPaginas((q) => this.repo.resumen({ id_proveedor: idProveedor, sort: 'id_periodo,asc', ...q })),
   });
 
   protected readonly columnas: DataTableColumn<SaldoProveedor>[] = [

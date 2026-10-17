@@ -5,7 +5,8 @@ import type { Notificacion } from './models/notificaciones.models';
 import { marcarVistas, sinVer } from './notificaciones.logica';
 
 const PREFIJO = 'sila_notif_vistas_';
-export const INTERVALO_REFRESCO_MS = 2 * 60 * 1000;
+/** Alerts are also refreshed on opening the bell and on coming back to the tab, so a long interval is enough. */
+export const INTERVALO_REFRESCO_MS = 5 * 60 * 1000;
 
 function leer(clave: string | null): Set<string> {
   if (!clave) return new Set();

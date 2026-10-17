@@ -16,6 +16,7 @@ import { ResultadoAnioChartComponent } from './resultado-anio-chart.component';
 import { periodoDe, OCTUBRE_1 } from './resultado-quincena.fixture';
 import { ResultadoQuincenaPageComponent } from './resultado-quincena-page.component';
 import { RESULTADO_QUINCENA_ROUTES } from './resultado-quincena.routes';
+import { instalarInterseccionFalsa } from '../../shared/testing/interseccion-falsa';
 
 const PALETA = { chart1: '#00f', chart2: '#0f0', chart3: '#f00', chart4: '#ff0', chart5: '#0ff', success: '#0f0', destructive: '#f00', mutedForeground: '#888', border: '#333', foreground: '#fff' };
 const PROVEEDOR_TEMA = { provide: ChartThemeService, useValue: { palette: signal(PALETA) } };
@@ -55,6 +56,7 @@ describe('Resultado por quincena', () => {
   let gastos: Record<string, any>;
 
   beforeEach(() => {
+    instalarInterseccionFalsa();
     // Only the clock is faked: «today» is 2026-10-14 in Colombia.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-14T17:00:00Z'));

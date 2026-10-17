@@ -200,7 +200,12 @@ function pendiente(estado: string): boolean {
         <p class="mb-3 text-xs text-muted-foreground">Toca una barra o una fila para ver esa quincena. Las quincenas que aún no empiezan salen atenuadas.</p>
         @if (lista(); as periodosAnio) {
           <div class="sila-card mb-6 p-3 sm:p-4">
-            <app-resultado-anio-chart [periodos]="periodosAnio" [seleccionadaId]="seleccionada()?.id_periodo ?? null" [hoy]="hoy()" (seleccionar)="elegir($event)" />
+            <!-- The chart library (~220 KB) is fetched when this block nears the screen, not with the page. -->
+            @defer (on viewport) {
+              <app-resultado-anio-chart [periodos]="periodosAnio" [seleccionadaId]="seleccionada()?.id_periodo ?? null" [hoy]="hoy()" (seleccionar)="elegir($event)" />
+            } @placeholder {
+              <div class="flex h-64 items-center justify-center text-sm text-muted-foreground" aria-busy="true">Cargando gráfica…</div>
+            }
             @if (movil()) {
               <p class="mt-2 text-center text-xs text-muted-foreground">Desliza la gráfica hacia los lados para verla completa.</p>
             }

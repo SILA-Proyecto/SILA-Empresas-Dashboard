@@ -13,6 +13,7 @@ import { SilaValidators } from '../../shared/validators/sila-validators';
 import { etiquetaQuincena } from '../periodos/periodos.format';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from './data/cuentas-proveedores.provider';
 import type { MetodoPagoProveedor, NuevoPagoProveedor, PagoProveedor, ResumenProveedorQuincena } from './models/cuentas-proveedores.models';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 function fechaNoFutura(control: AbstractControl): ValidationErrors | null {
   const valor = String(control.value ?? '');
@@ -124,7 +125,7 @@ export class PagoProveedorDialogComponent {
 
   protected readonly quincenas = rxResource({
     params: () => this.proveedor()?.id_proveedor,
-    stream: ({ params: idProveedor }) => this.repo.resumen({ id_proveedor: idProveedor, page: 0, size: 50, sort: 'id_periodo,asc' }),
+    stream: ({ params: idProveedor }) => todasLasPaginas((q) => this.repo.resumen({ id_proveedor: idProveedor, sort: 'id_periodo,asc', ...q })),
   });
 
   protected readonly conSaldo = computed<ResumenProveedorQuincena[]>(() => {

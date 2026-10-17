@@ -16,6 +16,7 @@ import { INSUMOS_REPOSITORY } from '../insumos/data/insumos.provider';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from './data/cuentas-proveedores.provider';
 import type { PrecioProveedor } from './models/cuentas-proveedores.models';
 import { PrecioProveedorDialogComponent } from './precio-proveedor-dialog.component';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 @Component({
   selector: 'app-precios-tab',
@@ -132,7 +133,7 @@ export class PreciosTabComponent {
   protected readonly base = signal<PrecioProveedor | null>(null);
 
   private readonly proveedoresRecurso = rxResource({
-    stream: () => this.catalogos.listarProveedores({ activo: true, page: 0, size: 100, sort: 'nombre,asc' }),
+    stream: () => todasLasPaginas((q) => this.catalogos.listarProveedores({ activo: true, sort: 'nombre,asc', ...q })),
   });
   protected readonly opcionesProveedores = computed<readonly OpcionSelector[]>(() =>
     this.proveedoresRecurso.hasValue()
@@ -141,7 +142,7 @@ export class PreciosTabComponent {
   );
 
   private readonly insumosRecurso = rxResource({
-    stream: () => this.insumosRepo.listar({ activo: true, page: 0, size: 100, sort: 'nombre,asc' }),
+    stream: () => todasLasPaginas((q) => this.insumosRepo.listar({ activo: true, sort: 'nombre,asc', ...q })),
   });
   protected readonly opcionesInsumos = computed<readonly OpcionSelector[]>(() =>
     this.insumosRecurso.hasValue()

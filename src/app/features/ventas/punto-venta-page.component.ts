@@ -19,6 +19,7 @@ import type { MetodoPago, PrecioAplicable, TipoVenta, VentaDetalle } from './mod
 import { LineaTicket, PagoFila, armarVenta, aNumero, cambioDe, cantidadValida, efectivoAplicado, faltante, montoDePago, totalPagado, totalesTicket } from './ticket.calculos';
 import { VentaResumenComponent } from './venta-resumen.component';
 import { METODOS_PAGO } from './ventas.format';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 const DOCUMENTO_CONSUMIDOR_FINAL = '222222222222';
 const MAX_PAGOS = 6;
@@ -148,8 +149,8 @@ export class PuntoVentaPageComponent {
     if (lineas.length === 0) return;
     // The price may change with the client: ask again for the prices of the lines.
     const turno = ++this.cambioDeCliente;
-    this.repo
-      .precios({ id_cliente: nuevo.id_cliente, page: 0, size: 100, sort: 'producto,asc' })
+    // All the products, not the first 100: a line of the ticket may be any of them.
+    todasLasPaginas((q) => this.repo.precios({ id_cliente: nuevo.id_cliente, sort: 'producto,asc', ...q }))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (pagina) => {

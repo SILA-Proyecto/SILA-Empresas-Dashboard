@@ -22,6 +22,7 @@ import { CompraDialogComponent } from './compra-dialog.component';
 import { INSUMOS_REPOSITORY } from './data/insumos.provider';
 import { cargarInsumosActivos } from './insumos-activos';
 import type { Compra, EstadoCalidadCompra, EstadoCompra } from './models/insumos.models';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 
 @Component({
   selector: 'app-compras-tab',
@@ -200,9 +201,9 @@ export class ComprasTabComponent {
   protected readonly numero = formatoNumero;
   protected readonly fecha = formatoFecha;
 
-  /** Proveedores activos, hasta 100. */
+  /** Active providers (every page: the selector must offer all of them). */
   private readonly proveedoresRecurso = rxResource({
-    stream: () => this.catalogos.listarProveedores({ activo: true, page: 0, size: 100, sort: 'nombre,asc' }),
+    stream: () => todasLasPaginas((q) => this.catalogos.listarProveedores({ activo: true, sort: 'nombre,asc', ...q })),
   });
   protected readonly proveedores = computed(() =>
     this.proveedoresRecurso.hasValue() ? this.proveedoresRecurso.value().items.map((p) => ({ valor: p.id_proveedor, etiqueta: p.nombre })) : [],

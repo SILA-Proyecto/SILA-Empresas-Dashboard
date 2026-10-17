@@ -1,14 +1,12 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@angular/core';
 import { NgIcon } from '@ng-icons/core';
-import type * as lucide from '@ng-icons/lucide';
+import type { ICONOS } from './iconos';
 
 /**
- * Every Lucide icon shipped by `@ng-icons/lucide` (~1,990 of them), by its
- * `lucide<PascalName>` identifier — e.g. `'lucideHandshake'`. This is a
- * type-only import, so naming an icon costs nothing at runtime; the SVG data
- * itself is fetched by the loader registered in `app.config.ts`.
+ * The icons listed in `iconos.ts`, by their `lucide<PascalName>` identifier — e.g. `'lucideHandshake'`. A type-only import,
+ * so naming an icon costs nothing at runtime; to use another Lucide icon, add it to that list.
  */
-export type IconName = keyof typeof lucide;
+export type IconName = keyof typeof ICONOS;
 
 /**
  * Single wrapper around `<ng-icon>` so the app keeps one icon API:

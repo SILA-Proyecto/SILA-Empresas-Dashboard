@@ -79,7 +79,10 @@ export class NotificacionesCampanaComponent {
   constructor() {
     const destroyRef = inject(DestroyRef);
     this.servicio.refrescar();
-    const intervalo = setInterval(() => this.servicio.refrescar(), INTERVALO_REFRESCO_MS);
+    // Only while the tab is on screen: a hidden tab would spend data and battery for alerts nobody sees.
+    const intervalo = setInterval(() => {
+      if (document.visibilityState === 'visible') this.servicio.refrescar();
+    }, INTERVALO_REFRESCO_MS);
     // Coming back to the tab: the alerts may have changed meanwhile.
     const alVolver = () => {
       if (document.visibilityState === 'visible') this.servicio.refrescar();

@@ -13,6 +13,7 @@ import { TABLERO_REPOSITORY } from './data/tablero.provider';
 import type { Tablero } from './models/tablero.models';
 import { INTERVALO_TABLERO_MS, TableroPageComponent } from './tablero-page.component';
 import { VentasSemanaChartComponent } from './ventas-semana-chart.component';
+import { instalarInterseccionFalsa } from '../../shared/testing/interseccion-falsa';
 
 const SEMANA = Array.from({ length: 7 }, (_, i) => ({ fecha: `2026-10-${String(8 + i).padStart(2, '0')}`, total: i === 2 ? 0 : 50000 * (i + 1), cantidad: i === 2 ? 0 : i + 1 }));
 const ALERTA = (n: number, severidad: 'CRITICA' | 'ADVERTENCIA') => ({ clave: `K${n}`, tipo: 'INSUMO_AGOTADO', severidad, titulo: `Alerta ${n}`, detalle: `Detalle ${n}`, entidad: 'INSUMO', id_entidad: n, fecha: null });
@@ -55,6 +56,7 @@ describe('Tablero', () => {
   let repo: { obtener: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
+    instalarInterseccionFalsa();
     repo = { obtener: vi.fn(() => of(TABLERO)) };
     TestBed.configureTestingModule({
       providers: [

@@ -5,6 +5,7 @@ import { IconComponent } from '../../../shared/ui/icon/icon.component';
 import { INSUMOS_REPOSITORY } from '../../insumos/data/insumos.provider';
 import type { Insumo } from '../../insumos/models/insumos.models';
 import type { LineaRecetaGuardar } from '../models/catalogos.models';
+import { todasLasPaginas } from '../../../core/api/todas-las-paginas';
 
 /** A recipe row being edited: the quantity stays as typed until validated. */
 export interface LineaEdicion {
@@ -94,7 +95,7 @@ export class RecetaEditorComponent {
   readonly error = input<string | null>(null);
 
   private readonly recurso = rxResource({
-    stream: () => (this.repo ? this.repo.listar({ activo: true, page: 0, size: 100, sort: 'nombre,asc' }) : of({ items: [] as Insumo[], total: 0, page: 0, size: 100 })),
+    stream: () => (this.repo ? todasLasPaginas((q) => this.repo!.listar({ activo: true, sort: 'nombre,asc', ...q })) : of({ items: [] as Insumo[], total: 0, page: 0, size: 100 })),
   });
   protected readonly cargandoInsumos = this.recurso.isLoading;
   protected readonly insumosActivos = computed<Insumo[]>(() => (this.recurso.hasValue() ? this.recurso.value().items : []));

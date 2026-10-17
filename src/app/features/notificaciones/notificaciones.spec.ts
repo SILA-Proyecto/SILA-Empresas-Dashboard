@@ -12,7 +12,7 @@ import type { Notificacion } from './models/notificaciones.models';
 import { NotificacionesCampanaComponent } from './notificaciones-campana.component';
 import { NotificacionesPageComponent } from './notificaciones-page.component';
 import { destinoDe, iconoDe, marcarVistas, sinVer } from './notificaciones.logica';
-import { NotificacionesService } from './notificaciones.service';
+import { INTERVALO_REFRESCO_MS, NotificacionesService } from './notificaciones.service';
 
 const n = (clave: string, severidad: Notificacion['severidad'] = 'ADVERTENCIA', extra: Partial<Notificacion> = {}): Notificacion => ({
   clave, tipo: 'INSUMO_BAJO', severidad, titulo: `Alerta ${clave}`, detalle: 'Detalle', entidad: 'INSUMO', id_entidad: 1, fecha: null, ...extra,
@@ -190,6 +190,29 @@ describe('Campana y página de notificaciones', () => {
 
     expect(raiz(f).querySelector('[data-testid=punto-notificaciones]')).toBeNull();
     expect(raiz(f).querySelectorAll('app-notificacion-fila').length).toBe(2); // siguen en la lista
+  });
+
+  describe('refresco periódico', () => {
+    const visibilidad = (valor: DocumentVisibilityState) => Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => valor });
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as unknown as Record<string, unknown>)['visibilityState'];
+    });
+
+    it('con la pestaña a la vista consulta cada intervalo; en segundo plano no gasta datos', async () => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+      const f = TestBed.createComponent(NotificacionesCampanaComponent);
+      await estabilizar(f);
+      const alInicio = repo.listar.mock.calls.length;
+
+      visibilidad('hidden');
+      vi.advanceTimersByTime(INTERVALO_REFRESCO_MS * 2);
+      expect(repo.listar.mock.calls.length).toBe(alInicio);
+
+      visibilidad('visible');
+      vi.advanceTimersByTime(INTERVALO_REFRESCO_MS);
+      expect(repo.listar.mock.calls.length).toBe(alInicio + 1);
+    });
   });
 
   it('solo advertencias sin ver: el punto va en color de aviso, no de error', async () => {
