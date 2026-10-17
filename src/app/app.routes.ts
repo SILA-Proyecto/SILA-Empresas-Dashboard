@@ -77,6 +77,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/gastos/gastos.routes').then((m) => m.GASTOS_ROUTES),
       },
       {
+        path: 'reportes',
+        loadChildren: () => import('./features/reportes/reportes.routes').then((m) => m.REPORTES_ROUTES),
+      },
+      {
         path: 'archivos',
         loadChildren: () => import('./features/archivos/archivos.routes').then((m) => m.ARCHIVOS_ROUTES),
       },

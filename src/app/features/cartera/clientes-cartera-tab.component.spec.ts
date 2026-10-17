@@ -45,24 +45,6 @@ describe('ClientesCarteraTabComponent · castigar', () => {
     return fixture;
   }
 
-  it('«¿Desde hace cuánto me deben?» reparte la deuda por atraso y tocar un grupo filtra la lista', async () => {
-    const f = await crear('ADMIN', [CLIENTE, { ...CLIENTE, id_cliente: 6, cliente: 'Tienda Sol', saldo_deudor: 900, dias_mora: 40, estado_credito: 'EN_MORA' }]);
-    const raiz = f.nativeElement as HTMLElement;
-    const texto = (id: string) => (raiz.querySelector(`[data-testid=${id}]`)?.textContent ?? '').replace(/\s+/g, ' ');
-
-    expect(texto('edad-SIN_VENCER')).toContain('500');
-    expect(texto('edad-SIN_VENCER')).toContain('1 cliente');
-    expect(texto('edad-DE_31_A_60')).toContain('900');
-
-    repoClientes.mockClear();
-    raiz.querySelector<HTMLButtonElement>('[data-testid=edad-DE_31_A_60]')!.click();
-    for (let i = 0; i < 4; i++) {
-      f.detectChanges();
-      await f.whenStable();
-    }
-    expect(repoClientes).toHaveBeenCalledWith(expect.objectContaining({ mora_minima: 31, sort: 'dias_mora,desc' }));
-  });
-
   const botones = (f: ComponentFixture<unknown>) => Array.from((f.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('tbody button')).map((b) => b.textContent!.trim());
 
   it('un ADMIN ve «Dar por perdida la deuda»', async () => {

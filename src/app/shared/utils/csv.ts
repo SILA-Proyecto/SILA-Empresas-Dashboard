@@ -23,3 +23,11 @@ export function construirCsv<T>(columnas: readonly ColumnaCsv<T>[], filas: reado
   const cuerpo = filas.map((f) => columnas.map((c) => celda(c.valor(f))).join(';'));
   return '\uFEFF' + [encabezado, ...cuerpo].join('\r\n') + '\r\n';
 }
+
+/**
+ * A timestamp from the API (`2026-10-17T15:51:57`, already Colombia time or UTC without zone) as `2026-10-17 15:51:57`:
+ * a spreadsheet reads that as a date and time, while the `T` form stays as text. A plain day (`2026-10-17`) is left as is.
+ */
+export function fechaCsv(iso: string | null | undefined): string {
+  return iso ? iso.replace('T', ' ').replace(/\.\d+$/, '') : '';
+}

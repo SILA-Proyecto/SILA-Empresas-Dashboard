@@ -14,6 +14,9 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
 import { formatearNumerosEnTexto, formatoCop, formatoFecha, formatoNumero } from '../../shared/utils/formato-co';
+import { todasParaExportar } from '../../core/api/todas-las-paginas';
+import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
+import { fechaCsv, type ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { CATALOGOS_REPOSITORY } from '../catalogos/data/catalogos.provider';
@@ -33,6 +36,7 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
     DataTableCellDirective,
     FiltroFechasComponent,
     FiltrosPlegablesComponent,
+    BotonCsvComponent,
     HasRoleDirective,
     IconComponent,
     SelectorBuscableComponent,
@@ -41,6 +45,10 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
     VerComprobanteComponent,
   ],
   template: `
+    <div class="mb-4 flex justify-end">
+      <app-boton-csv nombre="compras_materias_primas" [columnas]="columnasCsv" [cargar]="todas" />
+    </div>
+
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="compras-insumo" class="mb-1 block text-xs font-medium text-muted-foreground">Materia prima</label>
@@ -248,6 +256,24 @@ export class ComprasTabComponent {
     { key: 'acciones', label: 'Acciones', sortable: false, value: () => '' },
   ];
   protected readonly compraId = (c: Compra) => c.id_compra;
+
+  protected readonly columnasCsv: ColumnaCsv<Compra>[] = [
+    { titulo: 'Fecha', valor: (c) => c.fecha },
+    { titulo: 'Materia prima', valor: (c) => c.insumo },
+    { titulo: 'Unidad', valor: (c) => c.unidad_medida },
+    { titulo: 'Proveedor', valor: (c) => c.proveedor ?? c.comprado_en },
+    { titulo: 'Pago', valor: (c) => (c.estado_calidad === 'RECHAZADO' ? '' : c.contado ? 'Contado' : 'Crédito') },
+    { titulo: 'Cantidad', valor: (c) => c.cantidad },
+    { titulo: 'Valor factura', valor: (c) => c.valor_total },
+    { titulo: 'Costo unitario', valor: (c) => c.costo_unitario },
+    { titulo: 'Referencia', valor: (c) => c.referencia },
+    { titulo: 'Estado', valor: (c) => c.estado },
+    { titulo: 'Calidad', valor: (c) => c.estado_calidad },
+    { titulo: 'Registró', valor: (c) => c.usuario_registro },
+    { titulo: 'Fecha de registro', valor: (c) => fechaCsv(c.fecha_registro) },
+  ];
+  /** Every purchase that matches the filters on screen, in the order on screen. */
+  protected readonly todas = () => todasParaExportar((q) => this.repo.listarCompras({ ...this.listado.consulta(), ...q }));
 
   protected alRegistrar(compra: Compra): void {
     this.dialogo.set(false);

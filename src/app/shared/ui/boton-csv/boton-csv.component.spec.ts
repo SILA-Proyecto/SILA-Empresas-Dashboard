@@ -49,7 +49,7 @@ describe('BotonCsvComponent', () => {
     boton(f).click();
 
     expect(nombres).toHaveLength(1);
-    expect(nombres[0]).toMatch(/^ventas-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(nombres[0]).toMatch(/^ventas_\d{4}-\d{2}-\d{2}\.csv$/);
     // `text()` drops the BOM when decoding, so the bytes are read: EF BB BF is what makes Excel read the accents as UTF-8.
     const bytes = new Uint8Array(await guardados[0].arrayBuffer());
     expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]);

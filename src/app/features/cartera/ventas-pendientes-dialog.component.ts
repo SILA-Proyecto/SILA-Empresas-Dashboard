@@ -3,7 +3,6 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { formatoCop, formatoFecha } from '../../shared/utils/formato-co';
 import { CARTERA_REPOSITORY } from './data/cartera.provider';
-import type { ClienteCartera } from './models/cartera.models';
 
 /** The sales a client still owes, oldest first (the order in which a payment is applied). */
 @Component({
@@ -56,7 +55,7 @@ import type { ClienteCartera } from './models/cartera.models';
 export class VentasPendientesDialogComponent {
   private readonly repo = inject(CARTERA_REPOSITORY);
 
-  readonly cliente = input<ClienteCartera | null>(null);
+  readonly cliente = input<{ id_cliente: number; cliente: string } | null>(null);
   readonly cerrado = output<void>();
 
   protected readonly cop = formatoCop;

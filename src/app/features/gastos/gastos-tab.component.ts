@@ -14,6 +14,9 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
 import { formatoCop, formatoFecha, formatoFechaHora, formatoNumero } from '../../shared/utils/formato-co';
+import { todasParaExportar } from '../../core/api/todas-las-paginas';
+import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
+import { fechaCsv, type ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
@@ -26,7 +29,7 @@ import type { EstadoGasto, Gasto } from './models/gastos.models';
 @Component({
   selector: 'app-gastos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, GastoDialogComponent, HasRoleDirective, IconComponent, ServerDataTableComponent, StatusChipComponent, VerComprobanteComponent],
+  imports: [BotonCsvComponent, ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, GastoDialogComponent, HasRoleDirective, IconComponent, ServerDataTableComponent, StatusChipComponent, VerComprobanteComponent],
   template: `
     <div class="sila-card mb-6 flex flex-wrap items-center justify-between gap-4 p-4" data-testid="resumen-gastos" aria-live="polite">
       <div>
@@ -41,6 +44,10 @@ import type { EstadoGasto, Gasto } from './models/gastos.models';
     @if (resumen.error()) {
       <p class="-mt-3 mb-4 text-sm text-destructive" role="alert">No se pudo calcular el total. <button type="button" class="underline" (click)="resumen.reload()">Reintentar</button></p>
     }
+
+    <div class="mb-4 flex justify-end">
+      <app-boton-csv nombre="gastos" [columnas]="columnasCsv" [cargar]="todos" />
+    </div>
 
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div>
@@ -202,6 +209,19 @@ export class GastosTabComponent {
     { key: 'acciones', label: 'Acciones', sortable: false, value: () => '' },
   ];
   protected readonly gastoId = (g: Gasto) => g.id_gasto;
+
+  protected readonly columnasCsv: ColumnaCsv<Gasto>[] = [
+    { titulo: 'Fecha', valor: (g) => g.fecha_gasto },
+    { titulo: 'Categoría', valor: (g) => g.categoria },
+    { titulo: 'Concepto', valor: (g) => g.concepto },
+    { titulo: 'Monto', valor: (g) => g.monto },
+    { titulo: 'Quincena', valor: (g) => `${g.anio}-${String(g.mes).padStart(2, '0')} · quincena ${g.quincena}` },
+    { titulo: 'Estado', valor: (g) => g.estado },
+    { titulo: 'Registró', valor: (g) => g.usuario_registro },
+    { titulo: 'Fecha de registro', valor: (g) => fechaCsv(g.fecha_registro) },
+  ];
+  /** Every expense that matches the filters on screen, in the order on screen. */
+  protected readonly todos = () => todasParaExportar((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
 
   protected cambiarPeriodo(valor: string): void {
     this.elegido.set(valor === '' ? null : Number(valor));

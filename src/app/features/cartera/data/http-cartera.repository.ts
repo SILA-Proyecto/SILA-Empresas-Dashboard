@@ -7,7 +7,10 @@ import type {
   AbonosQuery,
   CastigoResultado,
   ClienteCartera,
+  ClienteEdades,
   ClientesCarteraQuery,
+  EdadesCartera,
+  EdadesClientesQuery,
   NuevoAbono,
   NuevoCastigo,
   Recibo,
@@ -28,6 +31,14 @@ export class HttpCarteraRepository extends CarteraRepository {
 
   resumen(): Observable<ResumenCartera> {
     return this.api.get<ResumenCartera>(`${BASE}/resumen`);
+  }
+
+  edades(): Observable<EdadesCartera> {
+    return this.api.get<EdadesCartera>(`${BASE}/edades`);
+  }
+
+  edadesClientes(query: PageQuery & EdadesClientesQuery): Observable<Page<ClienteEdades>> {
+    return this.api.get<Page<ClienteEdades>>(`${BASE}/edades/clientes`, { ...query });
   }
 
   ventasPendientes(idCliente: number): Observable<VentaPendiente[]> {

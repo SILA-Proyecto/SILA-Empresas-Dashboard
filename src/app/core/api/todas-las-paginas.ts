@@ -19,3 +19,11 @@ export function todasLasPaginas<T>(pedir: (consulta: { page: number; size: numbe
     }),
   );
 }
+
+/** An export stops at 5,000 rows (50 pages of 100); the person is told when the list was longer. */
+export const TOPE_EXPORTACION_PAGINAS = 50;
+
+/** `todasLasPaginas` with the export limit. */
+export function todasParaExportar<T>(pedir: (consulta: { page: number; size: number }) => Observable<Page<T>>): Observable<Page<T>> {
+  return todasLasPaginas(pedir, TOPE_EXPORTACION_PAGINAS);
+}

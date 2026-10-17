@@ -66,4 +66,19 @@ describe('HttpCarteraRepository', () => {
     expect(req.request.headers.get('Idempotency-Key')).toBe('clave-castigo-01');
     req.flush({});
   });
+
+  it('edades: GET /cartera/edades', () => {
+    repo.edades().subscribe();
+    const req = http.expectOne((r) => ruta(r.url) === '/api/v1/cartera/edades');
+    expect(req.request.method).toBe('GET');
+  });
+
+  it('edadesClientes: GET /cartera/edades/clientes con búsqueda, página y orden', () => {
+    repo.edadesClientes({ texto: 'rosa', page: 1, size: 20, sort: 'mora_alta,desc' }).subscribe();
+    const req = http.expectOne((r) => ruta(r.url) === '/api/v1/cartera/edades/clientes');
+    expect(req.request.params.get('texto')).toBe('rosa');
+    expect(req.request.params.get('page')).toBe('1');
+    expect(req.request.params.get('size')).toBe('20');
+    expect(req.request.params.get('sort')).toBe('mora_alta,desc');
+  });
 });

@@ -29,7 +29,7 @@ export class BotonCsvComponent<T> {
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** File name without extension; today's date is added. */
+  /** File name without extension: `<nombre>_<AAAA-MM-DD>.csv`. */
   readonly nombre = input.required<string>();
   readonly columnas = input.required<readonly ColumnaCsv<T>[]>();
   readonly cargar = input.required<() => Observable<Page<T>>>();
@@ -45,10 +45,10 @@ export class BotonCsvComponent<T> {
         next: (pagina) => {
           this.descargando.set(false);
           const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Bogota' });
-          guardarBlob(new Blob([construirCsv(this.columnas(), pagina.items)], { type: 'text/csv;charset=utf-8' }), `${this.nombre()}-${hoy}.csv`);
+          guardarBlob(new Blob([construirCsv(this.columnas(), pagina.items)], { type: 'text/csv;charset=utf-8' }), `${this.nombre()}_${hoy}.csv`);
           this.toast.exito(
             pagina.items.length < pagina.total
-              ? `Se descargaron las primeras ${formatoNumero(pagina.items.length)} de ${formatoNumero(pagina.total)} filas. Filtra por fechas para bajar el resto.`
+              ? `Se descargaron las primeras ${formatoNumero(pagina.items.length)} de ${formatoNumero(pagina.total)} filas. Filtra para bajar el resto.`
               : `Archivo listo: ${formatoNumero(pagina.items.length)} ${pagina.items.length === 1 ? 'fila' : 'filas'}.`,
           );
         },

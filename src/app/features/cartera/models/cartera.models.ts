@@ -82,3 +82,44 @@ export interface CastigoResultado {
   id_cliente: number;
   monto_castigado: number;
 }
+
+export type ClaveRangoEdad = 'AL_DIA' | 'MORA_1_15' | 'MORA_16_30' | 'MORA_31_60' | 'MORA_MAS_60';
+
+/** One age range of the debt: how much is owed and by how many clients (a client can be in several ranges). */
+export interface RangoEdad {
+  clave: ClaveRangoEdad;
+  etiqueta: string;
+  saldo: number;
+  clientes: number;
+}
+
+/** `GET /cartera/edades`. `fecha_corte` is today in Colombia; a sale not yet due counts as «al día». */
+export interface EdadesCartera {
+  fecha_corte: string;
+  total: number;
+  clientes: number;
+  rangos: RangoEdad[];
+}
+
+/** `GET /cartera/edades/clientes`: the debt of each client split by age. */
+export interface ClienteEdades {
+  id_cliente: number;
+  cliente: string;
+  telefono: string | null;
+  saldo_total: number;
+  ventas_pendientes: number;
+  dias_mora_max: number;
+  al_dia: number;
+  /** 1 to 15 days late. */
+  mora_leve: number;
+  /** 16 to 30. */
+  mora_media: number;
+  /** 31 to 60. */
+  mora_alta: number;
+  /** More than 60. */
+  mora_critica: number;
+}
+
+export interface EdadesClientesQuery {
+  texto?: string;
+}

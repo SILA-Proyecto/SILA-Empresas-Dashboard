@@ -25,7 +25,9 @@ Se midió cada pantalla, ya con sesión de administrador, en los cuatro anchos. 
 | `/ventas` | OK | OK | OK | OK |
 | `/ventas/nueva` | OK | OK | OK | OK |
 | `/precios-cliente` | OK | OK | OK | OK |
-| `/cartera?pestana=clientes` (edades en 2 columnas y «Descargar para Excel») | OK | OK | OK | OK |
+| `/cartera?pestana=clientes` («Descargar para Excel») | OK | OK | OK | OK |
+| `/cartera?pestana=edades` | OK | OK | OK | OK |
+| `/reportes/margen` | OK | OK | OK | OK |
 | `/cartera?pestana=abonos` | OK | OK | OK | OK |
 | `/parametros` | OK | OK | OK | OK |
 | `/usuarios` | OK | OK | OK | OK |

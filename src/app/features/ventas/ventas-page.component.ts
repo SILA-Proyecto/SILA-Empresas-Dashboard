@@ -9,8 +9,8 @@ import { ServerDataTableComponent } from '../../shared/ui/server-data-table/serv
 import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { formatoCop, formatoFecha } from '../../shared/utils/formato-co';
-import { todasLasPaginas } from '../../core/api/todas-las-paginas';
-import type { ColumnaCsv } from '../../shared/utils/csv';
+import { todasParaExportar } from '../../core/api/todas-las-paginas';
+import { fechaCsv, type ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
@@ -143,7 +143,7 @@ export class VentasPageComponent {
   ];
   protected readonly columnasCsv: ColumnaCsv<Venta>[] = [
     { titulo: 'N.º', valor: (v) => v.id_venta },
-    { titulo: 'Fecha', valor: (v) => v.fecha_venta },
+    { titulo: 'Fecha', valor: (v) => fechaCsv(v.fecha_venta) },
     { titulo: 'Cliente', valor: (v) => v.cliente },
     { titulo: 'Documento', valor: (v) => v.numero_documento },
     { titulo: 'Tipo', valor: (v) => etiquetaTipoVenta(v.tipo_venta) },
@@ -154,7 +154,7 @@ export class VentasPageComponent {
     { titulo: 'Estado', valor: (v) => chipEstadoPago(v.estado_pago).texto },
   ];
   /** Every sale that matches the filters on screen (not only the page shown). */
-  protected readonly todas = () => todasLasPaginas((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
+  protected readonly todas = () => todasParaExportar((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
   protected readonly ventaId = (v: Venta) => v.id_venta;
 
   protected limpiar(): void {

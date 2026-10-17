@@ -87,6 +87,31 @@ describe('Gastos', () => {
     for (const campo of ['id_periodo', 'id_categoria', 'texto', 'estado', 'desde', 'hasta']) expect(ultimoResumen[campo]).toEqual(ultimaLista[campo]);
   });
 
+  it('«Descargar para Excel» pide todas las páginas con la quincena, los filtros y el orden de la pantalla, y baja un archivo', async () => {
+    const guardados: Blob[] = [];
+    URL.createObjectURL = vi.fn((b: Blob) => (guardados.push(b), 'blob:x'));
+    URL.revokeObjectURL = vi.fn();
+    const clics = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    // 150 gastos: dos páginas de 100.
+    repo['listar'].mockImplementation((q: { page: number; size: number }) => of({ items: q.size === 100 ? [VIGENTE] : [VIGENTE, ANULADO], total: q.size === 100 ? 150 : 2, page: q.page, size: q.size }));
+    const f = await tab('ADMIN');
+    const sel = raiz(f).querySelector<HTMLSelectElement>('#gastos-categoria')!;
+    sel.value = '1';
+    sel.dispatchEvent(new Event('change'));
+    await estabilizar(f);
+
+    repo['listar'].mockClear();
+    boton(raiz(f), 'Descargar para Excel')!.click();
+    await estabilizar(f);
+
+    const llamadas = repo['listar'].mock.calls.map((c) => c[0]);
+    expect(llamadas.map((q) => [q.page, q.size])).toEqual([[0, 100], [1, 100]]);
+    for (const q of llamadas) expect(q).toMatchObject({ id_periodo: 19, id_categoria: 1, sort: 'fecha_gasto,desc' });
+    expect(clics).toHaveBeenCalledTimes(1);
+    expect(guardados).toHaveLength(1);
+    clics.mockRestore();
+  });
+
   it('un gasto anulado se ve tachado con su insignia, motivo, usuario y fecha; no ofrece anular de nuevo', async () => {
     const f = await tab('ADMIN');
     const filas = raiz(f).querySelectorAll('tbody tr');

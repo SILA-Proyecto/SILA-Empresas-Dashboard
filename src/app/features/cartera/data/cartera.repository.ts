@@ -5,7 +5,10 @@ import type {
   AbonosQuery,
   CastigoResultado,
   ClienteCartera,
+  ClienteEdades,
   ClientesCarteraQuery,
+  EdadesCartera,
+  EdadesClientesQuery,
   NuevoAbono,
   NuevoCastigo,
   Recibo,
@@ -21,6 +24,10 @@ import type {
 export abstract class CarteraRepository {
   abstract clientes(query: PageQuery & ClientesCarteraQuery): Observable<Page<ClienteCartera>>;
   abstract resumen(): Observable<ResumenCartera>;
+  /** The debt split by days of mora (totals). Read-only, ADMIN and OPERATIVO. */
+  abstract edades(): Observable<EdadesCartera>;
+  /** The same split per client. `sort`: cliente, saldo_total (default, desc), dias_mora_max, al_dia, mora_leve, mora_media, mora_alta, mora_critica. */
+  abstract edadesClientes(query: PageQuery & EdadesClientesQuery): Observable<Page<ClienteEdades>>;
   /** Oldest first: the order in which a payment is applied. A plain array. */
   abstract ventasPendientes(idCliente: number): Observable<VentaPendiente[]>;
   abstract abonos(query: PageQuery & AbonosQuery): Observable<Page<Abono>>;

@@ -9,6 +9,9 @@ import { ServerDataTableComponent } from '../../shared/ui/server-data-table/serv
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatoCop, formatoFecha, formatoNumero } from '../../shared/utils/formato-co';
+import { todasParaExportar } from '../../core/api/todas-las-paginas';
+import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
+import type { ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { AjusteDialogComponent } from '../produccion/ajuste-dialog.component';
@@ -25,9 +28,11 @@ const VENTANAS = [7, 15, 30] as const;
 @Component({
   selector: 'app-inventario-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FiltrosPlegablesComponent, AjusteDialogComponent, DataTableCellDirective, IconComponent, PageHeaderComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [BotonCsvComponent, FiltrosPlegablesComponent, AjusteDialogComponent, DataTableCellDirective, IconComponent, PageHeaderComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
-    <app-page-header title="Inventario" description="Stock actual de los productos activos y los lotes que están por vencer." />
+    <app-page-header title="Inventario" description="Stock actual de los productos activos y los lotes que están por vencer.">
+      <app-boton-csv nombre="inventario" [columnas]="columnasCsv" [cargar]="todos" />
+    </app-page-header>
 
     <div class="mb-6 grid gap-4 sm:grid-cols-3" aria-live="polite">
       <div class="sila-card p-4">
@@ -194,6 +199,17 @@ export class InventarioPageComponent {
     { key: 'acciones', label: 'Acciones', sortable: false, value: () => '' },
   ];
   protected readonly itemId = (i: ItemInventario) => i.id_producto;
+
+  protected readonly columnasCsv: ColumnaCsv<ItemInventario>[] = [
+    { titulo: 'SKU', valor: (i) => i.codigo_sku },
+    { titulo: 'Producto', valor: (i) => i.producto },
+    { titulo: 'Unidad', valor: (i) => i.unidad_medida },
+    { titulo: 'Stock', valor: (i) => i.stock_actual },
+    { titulo: 'Precio base', valor: (i) => i.precio_base },
+    { titulo: 'Valor a precio de venta', valor: (i) => i.valor_venta_inventario },
+  ];
+  /** Every product that matches the search on screen, in the order on screen. */
+  protected readonly todos = () => todasParaExportar((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
 
   // SUPUESTO: AP-10. Only `dias_restantes` is sortable here: the contract names the default sort of this endpoint but not the allowed ones.
   protected readonly columnasAlertas: DataTableColumn<AlertaCaducidad>[] = [

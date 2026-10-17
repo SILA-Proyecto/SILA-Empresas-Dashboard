@@ -6,10 +6,12 @@ import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.com
 import { Pestana, PestanasComponent } from '../../shared/ui/pestanas/pestanas.component';
 import { AbonosTabComponent } from './abonos-tab.component';
 import { ClientesCarteraTabComponent } from './clientes-cartera-tab.component';
+import { EdadesCarteraTabComponent } from './edades-cartera-tab.component';
 import type { ClienteCartera } from './models/cartera.models';
 
 const PESTANAS: readonly Pestana[] = [
   { id: 'clientes', etiqueta: 'Clientes con deuda', icono: 'lucideWallet' },
+  { id: 'edades', etiqueta: 'Por edades', icono: 'lucideCalendarRange' },
   { id: 'abonos', etiqueta: 'Abonos', icono: 'lucideReceipt' },
 ];
 
@@ -17,7 +19,7 @@ const PESTANAS: readonly Pestana[] = [
 @Component({
   selector: 'app-cartera-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AbonosTabComponent, ClientesCarteraTabComponent, PageHeaderComponent, PestanasComponent],
+  imports: [AbonosTabComponent, ClientesCarteraTabComponent, EdadesCarteraTabComponent, PageHeaderComponent, PestanasComponent],
   template: `
     <app-page-header title="Cartera" description="Lo que los clientes deben por ventas a crédito, los abonos recibidos y, si eres administrador, el castigo de cartera incobrable." />
 
@@ -27,6 +29,9 @@ const PESTANAS: readonly Pestana[] = [
       @switch (activa()) {
         @case ('clientes') {
           <app-clientes-cartera-tab (verAbonos)="irAAbonos($event)" />
+        }
+        @case ('edades') {
+          <app-edades-cartera-tab />
         }
         @case ('abonos') {
           <app-abonos-tab [idClienteFijo]="idCliente()" [nombreClienteFijo]="nombreCliente()" (quitarCliente)="quitarCliente()" />
