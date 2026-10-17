@@ -41,10 +41,11 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
   {
     label: 'Producción y acopio',
     items: [
-      { label: 'Recepción de leche', icon: 'lucideMilk', route: '/acopio' },
+      { label: 'Calidad de la leche', icon: 'lucideMilk', route: '/acopio' },
+      { label: 'Cuentas con proveedores', icon: 'lucideHandCoins', route: '/cuentas-proveedores' },
       { label: 'Producción', icon: 'lucideFactory', route: '/produccion' },
       { label: 'Inventario', icon: 'lucideWarehouse', route: '/inventario' },
-      { label: 'Insumos', icon: 'lucidePackage', route: '/insumos' },
+      { label: 'Materias primas', icon: 'lucidePackage', route: '/insumos' },
     ],
   },
   {

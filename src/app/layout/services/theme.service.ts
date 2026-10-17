@@ -21,7 +21,7 @@ const DEFAULT_PREFERENCES: ThemePreferences = {
   direction: 'ltr',
 };
 
-/** Applies the theme customizer's choices to <html> and keeps them in localStorage. */
+/** Applies the light/dark choice to <html> and keeps it in localStorage. */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly preferences = signal<ThemePreferences>(this.loadPreferences());
@@ -86,7 +86,9 @@ export class ThemeService {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return DEFAULT_PREFERENCES;
-      return { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) };
+      // Only the light/dark choice is kept: accent, radius and direction were options of a panel that no longer exists.
+      const { mode } = JSON.parse(raw) as Partial<ThemePreferences>;
+      return { ...DEFAULT_PREFERENCES, ...(mode === 'light' || mode === 'dark' || mode === 'auto' ? { mode } : {}) };
     } catch {
       return DEFAULT_PREFERENCES;
     }

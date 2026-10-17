@@ -8,13 +8,12 @@ import { ToastHostComponent } from '../../shared/ui/toast/toast-host.component';
 import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { SidebarStateService } from '../services/sidebar-state.service';
-import { ThemeCustomizerComponent } from '../theme-customizer/theme-customizer.component';
 
 @Component({
   selector: 'app-dashboard-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [VisorArchivosComponent, RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent, ThemeCustomizerComponent],
+  imports: [VisorArchivosComponent, RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent],
   templateUrl: './dashboard-shell.component.html',
 })
 export class DashboardShellComponent {

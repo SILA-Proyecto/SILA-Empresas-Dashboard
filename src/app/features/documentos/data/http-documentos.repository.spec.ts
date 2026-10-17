@@ -16,10 +16,10 @@ describe('HttpDocumentosRepository', () => {
   afterEach(() => http.verify());
 
   it('listar: GET /documentos con tipo, entidad, estado, página y orden', () => {
-    repo.listar({ tipo_entidad: 'RECEPCION_LECHE', id_entidad: 45, estado_carga: 'ERROR', page: 0, size: 10, sort: 'fecha_registro,desc' }).subscribe();
+    repo.listar({ tipo_entidad: 'FACTURA', id_entidad: 45, estado_carga: 'ERROR', page: 0, size: 10, sort: 'fecha_registro,desc' }).subscribe();
     const req = http.expectOne((r) => ruta(r.url) === '/api/v1/documentos');
     expect(req.request.method).toBe('GET');
-    expect(req.request.params.get('tipo_entidad')).toBe('RECEPCION_LECHE');
+    expect(req.request.params.get('tipo_entidad')).toBe('FACTURA');
     expect(req.request.params.get('id_entidad')).toBe('45');
     expect(req.request.params.get('estado_carga')).toBe('ERROR');
     req.flush({ items: [], total: 0, page: 0, size: 10 });
@@ -35,7 +35,7 @@ describe('HttpDocumentosRepository', () => {
   });
 
   it('crear: POST /documentos con Idempotency-Key', () => {
-    const cuerpo = { tipo_entidad: 'RECEPCION_LECHE' as const, id_entidad: 45, nombre_archivo: 'recepcion-45.pdf' };
+    const cuerpo = { tipo_entidad: 'FACTURA' as const, id_entidad: 45, nombre_archivo: 'factura-45.pdf' };
     repo.crear(cuerpo, 'clave-doc-0001').subscribe();
     const req = http.expectOne((r) => ruta(r.url) === '/api/v1/documentos');
     expect(req.request.method).toBe('POST');

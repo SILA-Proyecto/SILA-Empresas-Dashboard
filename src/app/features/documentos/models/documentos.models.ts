@@ -1,15 +1,5 @@
-export type TipoEntidadDocumento = 'FACTURA' | 'NOTA_CREDITO' | 'RECEPCION_LECHE';
+export type TipoEntidadDocumento = 'FACTURA' | 'NOTA_CREDITO';
 export type EstadoCarga = 'PENDIENTE' | 'SUBIDO' | 'ERROR';
-
-export const TIPOS_ENTIDAD: readonly { valor: TipoEntidadDocumento; etiqueta: string }[] = [
-  { valor: 'FACTURA', etiqueta: 'Factura' },
-  { valor: 'NOTA_CREDITO', etiqueta: 'Nota crédito' },
-  { valor: 'RECEPCION_LECHE', etiqueta: 'Recepción de leche' },
-];
-
-export function etiquetaTipoEntidad(tipo: TipoEntidadDocumento): string {
-  return TIPOS_ENTIDAD.find((t) => t.valor === tipo)?.etiqueta ?? tipo;
-}
 
 /** A document in the Google Drive queue. The backend only keeps the record and its state; the upload itself is done by the caller. */
 export interface Documento {
