@@ -16,14 +16,6 @@
       </div>
     </div>
     <div>
-      <label for="proveedores-tipo" class="mb-1 block text-xs font-medium text-muted-foreground">Tipo</label>
-      <select id="proveedores-tipo" class="sila-select w-36" [value]="filtroTipo()" (change)="cambiarFiltroTipo($any($event.target).value)">
-        <option value="TODOS">Todos</option>
-        <option value="LECHERO">Lechero</option>
-        <option value="INSUMOS">Insumos</option>
-      </select>
-    </div>
-    <div>
       <label for="proveedores-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
       <select id="proveedores-estado" class="sila-select w-36" [value]="filtroActivo()" (change)="cambiarFiltroActivo($any($event.target).value)">
         <option value="TODOS">Todos</option>
@@ -60,9 +52,6 @@
   </ng-template>
   <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-proveedor>
     <span class="font-medium">{{ proveedor.nombre }}</span>
-  </ng-template>
-  <ng-template appDataTableCell="tipo_proveedor" [cellRows]="listado.datos()?.items" let-proveedor>
-    <app-status-chip [texto]="proveedor.tipo_proveedor === 'LECHERO' ? 'Lechero' : 'Insumos'" tono="info" />
   </ng-template>
   <ng-template appDataTableCell="activo" [cellRows]="listado.datos()?.items" let-proveedor>
     <app-status-chip [texto]="proveedor.activo ? 'Activo' : 'Inactivo'" [tono]="proveedor.activo ? 'exito' : 'neutro'" />

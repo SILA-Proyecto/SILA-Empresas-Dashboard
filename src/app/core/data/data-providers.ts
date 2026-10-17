@@ -35,6 +35,8 @@ import { HttpProduccionRepository } from '../../features/produccion/data/http-pr
 import { PRODUCCION_REPOSITORY } from '../../features/produccion/data/produccion.provider';
 import { HttpUsuariosRepository } from '../../features/usuarios/data/http-usuarios.repository';
 import { USUARIOS_REPOSITORY } from '../../features/usuarios/data/usuarios.provider';
+import { HttpCuentasProveedoresRepository } from '../../features/cuentas-proveedores/data/http-cuentas-proveedores.repository';
+import { CUENTAS_PROVEEDORES_REPOSITORY } from '../../features/cuentas-proveedores/data/cuentas-proveedores.provider';
 
 /** Binds every repository token to its HTTP implementation. Development and production use the same one. */
 export function provideDataLayer(): Provider[] {
@@ -44,6 +46,7 @@ export function provideDataLayer(): Provider[] {
     { provide: USUARIOS_REPOSITORY, useExisting: HttpUsuariosRepository },
     { provide: AUDITORIA_REPOSITORY, useExisting: HttpAuditoriaRepository },
     { provide: ACOPIO_REPOSITORY, useExisting: HttpAcopioRepository },
+    { provide: CUENTAS_PROVEEDORES_REPOSITORY, useExisting: HttpCuentasProveedoresRepository },
     { provide: PRODUCCION_REPOSITORY, useExisting: HttpProduccionRepository },
     { provide: INVENTARIO_REPOSITORY, useExisting: HttpInventarioRepository },
     { provide: INSUMOS_REPOSITORY, useExisting: HttpInsumosRepository },

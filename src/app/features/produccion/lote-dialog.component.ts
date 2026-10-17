@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
@@ -9,9 +9,11 @@ import { FormFieldComponent } from '../../shared/ui/form-field/form-field.compon
 import { OpcionSelector, SelectorBuscableComponent } from '../../shared/ui/selector-buscable/selector-buscable.component';
 import { aplicarCamposDelServidor } from '../../shared/utils/errores-formulario';
 import { hoyColombia } from '../../shared/utils/fecha-co';
-import { formatoCop, formatoNumero } from '../../shared/utils/formato-co';
+import { formatearNumerosEnTexto, formatoCop, formatoNumero } from '../../shared/utils/formato-co';
 import { SilaValidators } from '../../shared/validators/sila-validators';
 import { CATALOGOS_REPOSITORY } from '../catalogos/data/catalogos.provider';
+import { INSUMOS_REPOSITORY } from '../insumos/data/insumos.provider';
+import type { Insumo } from '../insumos/models/insumos.models';
 import { PRODUCCION_REPOSITORY } from './data/produccion.provider';
 import type { ProductoOpcion } from './models/ajuste-tipos';
 import type { Lote, NuevoLote } from './models/produccion.models';
@@ -53,16 +55,43 @@ function vencimientoValido(control: AbstractControl): ValidationErrors | null {
           <p class="text-xs font-medium text-destructive" aria-live="polite">{{ errorProducto() }}</p>
         </div>
 
+        <div class="rounded-md border border-border bg-muted/40 p-3 text-xs" data-testid="stock-leche-aviso">
+          <span class="text-muted-foreground">Stock de leche disponible: </span>
+          <strong class="font-medium text-foreground">{{ stockLeche() !== null ? numero(stockLeche()!) + ' LT' : 'Cargando…' }}</strong>
+          <span class="text-muted-foreground"> · El costo del lote se calcula automáticamente con el promedio ponderado del stock.</span>
+        </div>
+
         <div class="grid gap-4 sm:grid-cols-2">
-          <app-form-field etiqueta="Litros de leche usados" ayuda="Mayor que 0. Es un dato declarado: no se descuenta de ningún inventario de leche." [obligatorio]="true">
-            <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="litros_leche_usados" />
-          </app-form-field>
+          <div>
+            <app-form-field
+              etiqueta="Litros de leche usados"
+              ayuda="Litros reales utilizados. Se descuentan del stock al costo promedio vigente."
+              [obligatorio]="true"
+            >
+              <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="litros_leche_usados" />
+            </app-form-field>
+            @if (litrosEsperados(); as esp) {
+              <div class="mt-1 text-xs text-muted-foreground">
+                <span>Esperado según receta: <strong>{{ numero(esp) }} L</strong></span>
+                @if (form.controls.litros_leche_usados.value !== esp) {
+                  <button type="button" class="ms-2 text-primary underline" (click)="aplicarEsperados()">Usar sugerido</button>
+                }
+              </div>
+            }
+            @if (diferenciaLitros() !== null) {
+              <div class="mt-1 rounded bg-muted/60 p-1.5 text-xs" [class.text-amber-600]="alertaDiferencia()" [class.text-muted-foreground]="!alertaDiferencia()" data-testid="diferencia-leche">
+                <span>Esperado {{ numero(litrosEsperados()!) }} L · Usado {{ numero(valores().litros_leche_usados!) }} L · Dif: {{ diferenciaLitros()! > 0 ? '+' : '' }}{{ numero(diferenciaLitros()!) }} L</span>
+                @if (alertaDiferencia()) {
+                  <p class="mt-0.5 font-medium text-amber-600">Aviso: La cantidad de leche usada difiere más de 10 % respecto a la receta esperada.</p>
+                }
+              </div>
+            }
+          </div>
+
           <app-form-field [etiqueta]="'Cantidad obtenida' + (unidad() ? ' (' + unidad() + ')' : '')" ayuda="Lo que se suma al stock del producto." [obligatorio]="true">
             <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="cantidad_obtenida" />
           </app-form-field>
-          <app-form-field etiqueta="Costo por litro (COP)" ayuda="Cero o más. Con cero el lote queda sin costo." [obligatorio]="true">
-            <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="costo_por_litro" />
-          </app-form-field>
+
           <app-form-field etiqueta="Fecha de producción" ayuda="Hoy en hora de Colombia, o una anterior." [obligatorio]="true">
             <input class="sila-input" type="date" [max]="hoy()" formControlName="fecha_produccion" />
           </app-form-field>
@@ -73,7 +102,7 @@ function vencimientoValido(control: AbstractControl): ValidationErrors | null {
 
         @if (necesidades().length > 0) {
           <section class="rounded-md border border-border px-4 py-3 text-sm" aria-live="polite" data-testid="insumos-lote">
-            <h3 class="mb-2 text-xs font-medium text-muted-foreground">Insumos que se gastarán (según la receta)</h3>
+            <h3 class="mb-2 text-xs font-medium text-muted-foreground">Materias primas que se gastarán (según la receta)</h3>
             <ul class="space-y-1">
               @for (n of necesidades(); track n.id_insumo) {
                 <li class="flex flex-wrap items-center justify-between gap-2" [class.text-destructive]="n.falta > 0" [class.font-medium]="n.falta > 0">
@@ -89,23 +118,19 @@ function vencimientoValido(control: AbstractControl): ValidationErrors | null {
             }
           </section>
         } @else if (recetaVacia()) {
-          <p class="text-xs text-muted-foreground">Este producto no tiene receta: no se descuenta ningún insumo.</p>
+          <p class="text-xs text-muted-foreground">Este producto no tiene receta: solo se descuentan los litros de leche reales.</p>
         }
 
-        <dl class="grid gap-2 rounded-md bg-muted px-4 py-3 text-sm sm:grid-cols-3" data-testid="calculo-lote" aria-live="polite">
-          <div>
-            <dt class="text-xs text-muted-foreground">Costo total estimado</dt>
-            <dd class="font-semibold tabular-nums">{{ calculo().costoTotal === null ? '—' : cop(calculo().costoTotal!) }}</dd>
-          </div>
+        <dl class="grid gap-2 rounded-md bg-muted px-4 py-3 text-sm sm:grid-cols-2" data-testid="calculo-lote" aria-live="polite">
           <div>
             <dt class="text-xs text-muted-foreground">Rendimiento estimado</dt>
             <dd class="font-semibold tabular-nums">{{ calculo().rendimiento === null ? '—' : numero(calculo().rendimiento!) + ' %' }}</dd>
           </div>
           <div>
-            <dt class="text-xs text-muted-foreground">Costo unitario estimado</dt>
-            <dd class="font-semibold tabular-nums">{{ calculo().costoUnitario === null ? '—' : cop(calculo().costoUnitario!) }}</dd>
+            <dt class="text-xs text-muted-foreground">Cálculo de costo del lote</dt>
+            <dd class="text-xs text-muted-foreground">Automático: congelado al costo promedio ponderado de la leche y materias primas.</dd>
           </div>
-          <p class="text-xs text-muted-foreground sm:col-span-3">Solo informativo: los valores definitivos los calcula el servidor al guardar.</p>
+          <p class="text-xs text-muted-foreground sm:col-span-2">Solo informativo: los valores definitivos los calcula el servidor al guardar.</p>
         </dl>
       </form>
 
@@ -122,6 +147,7 @@ export class LoteDialogComponent {
   private readonly repo = inject(PRODUCCION_REPOSITORY);
   /** Optional: without it the recipe preview is simply not shown. */
   private readonly catalogos = inject(CATALOGOS_REPOSITORY, { optional: true });
+  private readonly insumosRepo = inject(INSUMOS_REPOSITORY, { optional: true });
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -144,59 +170,89 @@ export class LoteDialogComponent {
   protected readonly unidad = computed(() => this.productos().find((p) => p.id_producto === this.producto())?.unidad_medida ?? '');
   protected readonly errorProducto = computed(() => (this.productoTocado() && this.producto() === null ? 'Elige el producto.' : null));
 
+  /** Reloaded on every open so the stock shown is the current one. */
+  private readonly lecheRecurso = rxResource({
+    params: () => (this.abierto() ? true : undefined),
+    stream: () => (this.insumosRepo ? this.insumosRepo.listar({ texto: 'LECHE', page: 0, size: 20 }) : of({ items: [] as Insumo[], total: 0, page: 0, size: 20 })),
+  });
+  protected readonly stockLeche = computed<number | null>(() => {
+    if (!this.lecheRecurso.hasValue()) return null;
+    const l = this.lecheRecurso.value().items.find((i) => i.codigo === 'LECHE' || i.requiere_calidad);
+    return l ? l.stock_actual : null;
+  });
+
   protected readonly form = inject(NonNullableFormBuilder).group({
     litros_leche_usados: [null as number | null, [SilaValidators.requerido, SilaValidators.montoPositivo]],
     cantidad_obtenida: [null as number | null, [SilaValidators.requerido, SilaValidators.montoPositivo]],
-    costo_por_litro: [null as number | null, [SilaValidators.requerido, SilaValidators.rango(0, 1_000_000_000)]],
     fecha_produccion: [hoyColombia(), [SilaValidators.requerido, fechaNoFutura]],
     fecha_vencimiento: ['', [vencimientoValido]],
   });
-  private readonly valores = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
-
-  /**
-   * Informational only. SUPUESTO: AP-08. Rendimiento = cantidad ÷ litros × 100, como en el ejemplo del contrato
-   * (50 L → 40 kg = 80 %); el valor real lo calcula el servidor.
-   */
-  protected readonly calculo = computed(() => {
-    const v = this.valores();
-    const litros = Number(v.litros_leche_usados);
-    const cantidad = Number(v.cantidad_obtenida);
-    const costoLitro = Number(v.costo_por_litro);
-    const hayLitros = v.litros_leche_usados != null && litros > 0;
-    const costoTotal = hayLitros && v.costo_por_litro != null && costoLitro >= 0 ? Math.round(litros * costoLitro * 100) / 100 : null;
-    const hayCantidad = v.cantidad_obtenida != null && cantidad > 0;
-    return {
-      costoTotal,
-      rendimiento: hayLitros && hayCantidad ? Math.round((cantidad / litros) * 10000) / 100 : null,
-      costoUnitario: costoTotal !== null && hayCantidad ? Math.round((costoTotal / cantidad) * 100) / 100 : null,
-    };
-  });
-
-  private readonly clave = new ClaveIdempotente();
+  protected readonly valores = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
 
   // ---- Recipe preview: what the lote would consume vs. the insumo stock. Informational: the server decides (409 / 20002). ----
   private readonly receta = rxResource({
     params: () => this.producto() ?? undefined,
     stream: ({ params }) => (this.catalogos ? this.catalogos.obtenerReceta(params) : of(null)),
   });
+
+  protected readonly litrosEsperados = computed<number | null>(() => {
+    const r = this.receta.hasValue() ? this.receta.value() : null;
+    const cantidad = Number(this.valores().cantidad_obtenida);
+    if (!r || !(this.valores().cantidad_obtenida != null && cantidad > 0)) return null;
+    const linea = r.lineas.find((l) => l.codigo_insumo === 'LECHE');
+    if (!linea) return null;
+    return Math.round(cantidad * linea.cantidad_por_unidad * 100) / 100;
+  });
+
+  protected readonly diferenciaLitros = computed<number | null>(() => {
+    const esp = this.litrosEsperados();
+    const usados = Number(this.valores().litros_leche_usados);
+    if (esp === null || this.valores().litros_leche_usados == null || usados <= 0) return null;
+    return Math.round((usados - esp) * 100) / 100;
+  });
+
+  protected readonly alertaDiferencia = computed<boolean>(() => {
+    const esp = this.litrosEsperados();
+    const dif = this.diferenciaLitros();
+    if (esp === null || dif === null || esp === 0) return false;
+    return Math.abs(dif) / esp > 0.1;
+  });
+
   protected readonly necesidades = computed(() => {
     const r = this.receta.hasValue() ? this.receta.value() : null;
     const cantidad = Number(this.valores().cantidad_obtenida);
     if (!r || !(this.valores().cantidad_obtenida != null && cantidad > 0)) return [];
-    return r.lineas.map((l) => {
-      const necesario = Math.round(cantidad * l.cantidad_por_unidad * 10000) / 10000;
-      return { id_insumo: l.id_insumo, insumo: l.insumo, unidad: l.unidad_insumo, necesario, stock: l.stock_insumo, falta: Math.max(0, Math.round((necesario - l.stock_insumo) * 10000) / 10000) };
-    });
+    return r.lineas
+      .filter((l) => l.codigo_insumo !== 'LECHE')
+      .map((l) => {
+        const necesario = Math.round(cantidad * l.cantidad_por_unidad * 10000) / 10000;
+        return { id_insumo: l.id_insumo, insumo: l.insumo, unidad: l.unidad_insumo, necesario, stock: l.stock_insumo, falta: Math.max(0, Math.round((necesario - l.stock_insumo) * 10000) / 10000) };
+      });
   });
   protected readonly hayFaltantes = computed(() => this.necesidades().some((n) => n.falta > 0));
   protected readonly recetaVacia = computed(() => this.receta.hasValue() && this.receta.value() !== null && this.receta.value()!.lineas.length === 0);
 
+  /**
+   * Informational only. Rendimiento = cantidad ÷ litros × 100
+   */
+  protected readonly calculo = computed(() => {
+    const v = this.valores();
+    const litros = Number(v.litros_leche_usados);
+    const cantidad = Number(v.cantidad_obtenida);
+    const hayLitros = v.litros_leche_usados != null && litros > 0;
+    const hayCantidad = v.cantidad_obtenida != null && cantidad > 0;
+    return {
+      rendimiento: hayLitros && hayCantidad ? Math.round((cantidad / litros) * 10000) / 100 : null,
+    };
+  });
+
+  private readonly clave = new ClaveIdempotente();
+
   constructor() {
     effect(() => {
       if (this.abierto()) {
-        // Opening the dialog is a NEW user action: fresh data and a fresh idempotency key.
         this.hoy.set(hoyColombia());
-        this.form.reset({ litros_leche_usados: null, cantidad_obtenida: null, costo_por_litro: null, fecha_produccion: hoyColombia(), fecha_vencimiento: '' });
+        this.form.reset({ litros_leche_usados: null, cantidad_obtenida: null, fecha_produccion: hoyColombia(), fecha_vencimiento: '' });
         this.producto.set(null);
         this.productoTocado.set(false);
         this.errorGeneral.set(null);
@@ -204,7 +260,23 @@ export class LoteDialogComponent {
         this.clave.descartar();
       }
     });
+
+    effect(() => {
+      const esp = this.litrosEsperados();
+      const control = this.form.controls.litros_leche_usados;
+      if (esp !== null && (control.value === null || control.pristine)) {
+        untracked(() => control.setValue(esp));
+      }
+    });
+
     this.form.controls.fecha_produccion.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.form.controls.fecha_vencimiento.updateValueAndValidity());
+  }
+
+  protected aplicarEsperados(): void {
+    const esp = this.litrosEsperados();
+    if (esp !== null) {
+      this.form.controls.litros_leche_usados.setValue(esp);
+    }
   }
 
   protected guardar(): void {
@@ -221,7 +293,6 @@ export class LoteDialogComponent {
       id_producto: producto,
       litros_leche_usados: Number(v.litros_leche_usados),
       cantidad_obtenida: Number(v.cantidad_obtenida),
-      costo_por_litro: Number(v.costo_por_litro),
       fecha_produccion: v.fecha_produccion,
       ...(v.fecha_vencimiento ? { fecha_vencimiento: v.fecha_vencimiento } : {}),
     };
@@ -257,7 +328,7 @@ export class LoteDialogComponent {
       case 20002:
         // «Falta <insumo>: se necesitan X y hay Y.»: the generic text would hide which insumo is short.
       case 20006:
-        this.errorGeneral.set(error.message);
+        this.errorGeneral.set(formatearNumerosEnTexto(error.message));
         break;
       case 20017:
         this.clave.descartar();

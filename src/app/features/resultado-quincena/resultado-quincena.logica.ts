@@ -30,7 +30,7 @@ export function cascadaResultado(p: Periodo): Cascada {
   };
 }
 
-/** The CASH that came in and went out: collected − paid to lecheros − insumo purchases − expenses = `caja_neta`. */
+/** The CASH that came in and went out: collected − paid to providers − cash purchases − expenses = `caja_neta`. */
 export function cascadaCaja(p: Periodo): Cascada {
   return {
     total: p.caja_neta,
@@ -38,8 +38,8 @@ export function cascadaCaja(p: Periodo): Cascada {
       { clave: 'total_cobrado', etiqueta: 'Cobrado', valor: p.total_cobrado, signo: '+' },
       { clave: 'cobrado_contado', etiqueta: 'De ventas de contado', valor: p.cobrado_contado, signo: '+', detalle: true },
       { clave: 'cobrado_abonos', etiqueta: 'De abonos de cartera', valor: p.cobrado_abonos, signo: '+', detalle: true },
-      { clave: 'pagos_proveedores_caja', etiqueta: 'Pagos a lecheros', valor: p.pagos_proveedores_caja, signo: '−' },
-      { clave: 'compras_insumos', etiqueta: 'Compras de insumos', valor: p.compras_insumos, signo: '−' },
+      { clave: 'pagos_proveedores_caja', etiqueta: 'Pagos a proveedores', valor: p.pagos_proveedores_caja, signo: '−' },
+      { clave: 'compras_contado', etiqueta: 'Compras de contado', valor: p.compras_contado ?? 0, signo: '−' },
       { clave: 'gastos_operativos', etiqueta: 'Gastos', valor: p.gastos_operativos, signo: '−' },
     ],
   };
@@ -83,20 +83,20 @@ export interface TotalesAnio {
   ingresos_ventas: number;
   resultado_estimado: number;
   caja_neta: number;
-  leche_por_pagar: number;
+  por_pagar_proveedores: number;
   cartera_pendiente: number;
 }
 
 /** Totals of the year: ONLY the quincenas that already started (the future ones are all zeros anyway). */
 export function totalesAnio(periodos: readonly Periodo[], hoy: string): TotalesAnio {
   const empezadas = periodos.filter((p) => haEmpezado(p, hoy));
-  const suma = (campo: keyof Periodo) => redondear(empezadas.reduce((s, p) => s + (p[campo] as number), 0));
+  const suma = (campo: keyof Periodo) => redondear(empezadas.reduce((s, p) => s + ((p[campo] as number) ?? 0), 0));
   return {
     quincenas: empezadas.length,
     ingresos_ventas: suma('ingresos_ventas'),
     resultado_estimado: suma('resultado_estimado'),
     caja_neta: suma('caja_neta'),
-    leche_por_pagar: suma('leche_por_pagar'),
+    por_pagar_proveedores: suma('por_pagar_proveedores'),
     cartera_pendiente: suma('cartera_pendiente'),
   };
 }

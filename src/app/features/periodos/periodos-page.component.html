@@ -1,6 +1,6 @@
 <app-page-header
   title="Períodos"
-  description="Cada quincena es un candado: al cerrarla se bloquea el registro de ventas, recepciones, gastos y otros movimientos con fecha dentro de ella."
+  description="Cada quincena es un candado: al cerrarla se bloquea el registro de ventas, compras, gastos y otros movimientos con fecha dentro de ella."
 >
   <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary shrink-0" (click)="dialogoAnio.set(true)">
     <app-icon name="lucideCalendarPlus" class="size-4" aria-hidden="true" />
@@ -13,7 +13,7 @@
     <app-icon name="lucideCalendarRange" class="size-8 text-muted-foreground" aria-hidden="true" />
     <p class="font-medium">Aún no hay quincenas creadas</p>
     <p class="max-w-md text-sm text-muted-foreground">
-      Hay que crear los períodos del año para poder registrar ventas, recepciones de leche, gastos y demás movimientos.
+      Hay que crear los períodos del año para poder registrar ventas, compras de materias primas, gastos y demás movimientos.
     </p>
     <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary" (click)="dialogoAnio.set(true)">
       <app-icon name="lucideCalendarPlus" class="size-4" aria-hidden="true" />
@@ -85,7 +85,7 @@
         {{ cop(periodo.resultado_estimado) }}
       </span>
     </ng-template>
-    <ng-template appDataTableCell="leche_por_pagar" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.leche_por_pagar" /></ng-template>
+    <ng-template appDataTableCell="por_pagar_proveedores" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.por_pagar_proveedores" /></ng-template>
     <ng-template appDataTableCell="caja_neta" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.caja_neta" /></ng-template>
     <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-periodo>
       <!-- Hiding is not security: the API answers 403 / 20008 to an OPERATIVO anyway. -->

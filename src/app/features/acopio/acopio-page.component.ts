@@ -1,63 +1,55 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
-import { Pestana, PestanasComponent } from '../../shared/ui/pestanas/pestanas.component';
+import { RouterLink } from '@angular/router';
+import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { CalidadTabComponent } from './calidad-tab.component';
-import { LecherosTabComponent } from './lecheros-tab.component';
-import { PagoTabComponent } from './pago-tab.component';
-import { PreciosTabComponent } from './precios-tab.component';
-import { RecepcionesTabComponent } from './recepciones-tab.component';
 
-const PESTANAS: readonly Pestana[] = [
-  { id: 'recepciones', etiqueta: 'Recepciones', icono: 'lucideMilk' },
-  { id: 'calidad', etiqueta: 'Calidad por proveedor', icono: 'lucideShieldCheck' },
-  { id: 'pago', etiqueta: 'Pago a lecheros', icono: 'lucideWallet' },
-  { id: 'lecheros', etiqueta: 'Cuánto le debo', icono: 'lucideBanknote' },
-  { id: 'precios', etiqueta: 'Precios', icono: 'lucideTags' },
-];
-
-/** Recepción de leche: deliveries, quality per provider and what is owed to each. The tab lives in `?pestana=`. */
+/** Milk quality control: per-provider averages, rejections and threshold monitoring. */
 @Component({
   selector: 'app-acopio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CalidadTabComponent, LecherosTabComponent, PageHeaderComponent, PagoTabComponent, PreciosTabComponent, PestanasComponent, RecepcionesTabComponent],
+  imports: [CalidadTabComponent, IconComponent, PageHeaderComponent, RouterLink],
   template: `
-    <app-page-header title="Recepción de leche" description="Entregas de los proveedores lecheros, su control de calidad y los litros que se pagan por quincena." />
+    <app-page-header
+      title="Control de calidad de la leche"
+      description="Supervisión de temperatura, acidez y porcentaje de rechazos por proveedor de leche."
+    />
 
-    <app-pestanas [pestanas]="pestanas" [activa]="activa()" etiqueta="Recepción de leche" (seleccionada)="seleccionar($event)" />
+    @if (esRutaAntigua()) {
+      <div class="mb-4 rounded-lg border border-primary/40 bg-primary/10 p-4" data-testid="aviso-migracion">
+        <p class="font-medium text-foreground">Actualización del sistema:</p>
+        @if (parametro() === 'recepciones') {
+          <p class="mt-1 text-sm text-muted-foreground">
+            Las entregas de leche ahora se registran como compras en la sección de Materias primas.
+          </p>
+          <a routerLink="/insumos" [queryParams]="{ pestana: 'compras' }" class="sila-btn sila-btn-primary sila-btn-sm mt-3 inline-flex items-center gap-1.5">
+            <app-icon name="lucidePackage" class="size-4" aria-hidden="true" />
+            Ir a Compras de materias primas
+          </a>
+        } @else {
+          <p class="mt-1 text-sm text-muted-foreground">
+            Las cuentas, saldos, pagos y precios con proveedores ahora se gestionan en Cuentas con proveedores.
+          </p>
+          <a routerLink="/cuentas-proveedores" class="sila-btn sila-btn-primary sila-btn-sm mt-3 inline-flex items-center gap-1.5">
+            <app-icon name="lucideHandCoins" class="size-4" aria-hidden="true" />
+            Ir a Cuentas con proveedores
+          </a>
+        }
+      </div>
+    }
 
-    <section role="tabpanel" [id]="'panel-' + activa()" [attr.aria-labelledby]="'tab-' + activa()">
-      @switch (activa()) {
-        @case ('recepciones') {
-          <app-recepciones-tab />
-        }
-        @case ('calidad') {
-          <app-calidad-tab />
-        }
-        @case ('pago') {
-          <app-pago-tab />
-        }
-        @case ('lecheros') {
-          <app-lecheros-tab />
-        }
-        @case ('precios') {
-          <app-precios-tab />
-        }
-      }
-    </section>
+    <app-calidad-tab />
   `,
 })
 export class AcopioPageComponent {
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly pestanas = PESTANAS;
-  private readonly parametro = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('pestana'))));
-  protected readonly activa = computed(() => PESTANAS.find((p) => p.id === this.parametro())?.id ?? 'recepciones');
-
-  protected seleccionar(id: string): void {
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { pestana: id }, replaceUrl: true });
-  }
+  protected readonly parametro = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('pestana'))));
+  protected readonly esRutaAntigua = computed(() => {
+    const p = this.parametro();
+    return p === 'recepciones' || p === 'pago' || p === 'lecheros' || p === 'precios';
+  });
 }

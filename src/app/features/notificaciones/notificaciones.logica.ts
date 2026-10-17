@@ -49,7 +49,7 @@ export function iconoDe(tipo: string): IconName {
   if (tipo.startsWith('LOTE')) return 'lucideFactory';
   if (tipo.startsWith('CARTERA')) return 'lucideWallet';
   if (tipo === 'PERIODO_SIN_CERRAR') return 'lucideCalendarRange';
-  if (tipo === 'LECHE_POR_PAGAR') return 'lucideMilk';
+  if (tipo === 'PROVEEDORES_POR_PAGAR') return 'lucideHandCoins';
   if (tipo.startsWith('DOCUMENTO')) return 'lucideFileText';
   return 'lucideBell';
 }

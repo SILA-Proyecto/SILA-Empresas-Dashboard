@@ -5,8 +5,8 @@ import type { Comprobante, EstadoComprobante, SentidoComprobante, TipoComprobant
 export const TIPOS_COMPROBANTE: readonly { valor: TipoComprobante; etiqueta: string }[] = [
   { valor: 'VENTA', etiqueta: 'Venta' },
   { valor: 'ABONO', etiqueta: 'Abono' },
-  { valor: 'PAGO_LECHERO', etiqueta: 'Pago a lecheros' },
-  { valor: 'COMPRA_INSUMO', etiqueta: 'Compra de insumos' },
+  { valor: 'PAGO_PROVEEDOR', etiqueta: 'Pago a proveedor' },
+  { valor: 'COMPRA', etiqueta: 'Compra' },
   { valor: 'GASTO', etiqueta: 'Gasto' },
 ];
 
@@ -24,7 +24,7 @@ export function etiquetaTipoComprobante(tipo: TipoComprobante): string {
   return TIPOS_COMPROBANTE.find((t) => t.valor === tipo)?.etiqueta ?? tipo;
 }
 
-/** The server sends `COMPRA_INSUMO #25`; on screen the underscore is a space (`COMPRA INSUMO #25`). The data itself is untouched. */
+/** The server sends `PAGO_PROVEEDOR #25`; on screen the underscore is a space (`PAGO PROVEEDOR #25`). The data itself is untouched. */
 export function numeroLegible(numero: string): string {
   return numero.replace(/_/g, ' ');
 }

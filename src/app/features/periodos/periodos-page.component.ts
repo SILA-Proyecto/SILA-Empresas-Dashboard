@@ -121,7 +121,7 @@ export class PeriodosPageComponent {
     { key: 'resultado_estimado', label: 'Resultado estimado', align: 'end', value: (p) => p.resultado_estimado },
   ];
   private readonly columnasCuentas: DataTableColumn<Periodo>[] = [
-    { key: 'leche_por_pagar', label: 'Leche por pagar', sortable: false, align: 'end', value: (p) => p.leche_por_pagar },
+    { key: 'por_pagar_proveedores', label: 'Por pagar a proveedores', sortable: false, align: 'end', value: (p) => p.por_pagar_proveedores },
     { key: 'caja_neta', label: 'Caja neta', sortable: false, align: 'end', value: (p) => p.caja_neta },
   ];
   private readonly columnaAcciones: DataTableColumn<Periodo> = { key: 'acciones', label: 'Acciones', sortable: false, align: 'end', value: () => '' };
@@ -151,7 +151,7 @@ export class PeriodosPageComponent {
   protected readonly mensajeCerrar = computed(() => {
     const periodo = this.cerrando();
     return periodo
-      ? `Vas a cerrar ${this.quincena(periodo)} de ${periodo.anio}. Mientras esté cerrada no se podrán registrar ventas, recepciones, gastos ni otros movimientos con fecha dentro de esta quincena. Podrás reabrirla indicando un motivo.`
+      ? `Vas a cerrar ${this.quincena(periodo)} de ${periodo.anio}. Mientras esté cerrada no se podrán registrar ventas, compras, gastos ni otros movimientos con fecha dentro de esta quincena. Podrás reabrirla indicando un motivo.`
       : '';
   });
   protected readonly mensajeReabrir = computed(() => {

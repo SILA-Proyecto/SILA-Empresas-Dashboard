@@ -14,6 +14,17 @@ export function formatoNumero(valor: number): string {
   return NUMERO.format(valor);
 }
 
+/**
+ * Puts thousands separators on the whole numbers inside a server message (`hay 2468 LT` -> `hay 2.468 LT`).
+ * Leaves alone decimals, dates, codes and years (1900-2100), which are not quantities.
+ */
+export function formatearNumerosEnTexto(texto: string): string {
+  return texto.replace(/(?<![\w.,/:-])\d{4,}(?![\w/:-]|[.,]\d)/g, (n) => {
+    const valor = Number(n);
+    return n.length === 4 && valor >= 1900 && valor <= 2100 ? n : NUMERO.format(valor);
+  });
+}
+
 /** `2026-09-29` or an ISO timestamp -> `29/09/2026` */
 export function formatoFecha(iso: string): string {
   const [anio, mes, dia] = iso.slice(0, 10).split('-');

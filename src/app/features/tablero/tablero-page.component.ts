@@ -90,16 +90,17 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <app-tablero-tarjeta titulo="Resultado estimado" [valor]="pesos(q.resultado_estimado)" [clase]="neto(q.resultado_estimado)" icono="lucideChartColumn" data-testid="tarjeta-resultado">
-              <p>Estimado de la quincena</p>
+              <p>Vendido sin IVA {{ pesos(q.ingresos_ventas) }} − costo de lo producido {{ pesos(q.costo_produccion) }} − gastos {{ pesos(q.gastos_operativos) }} − cartera castigada {{ pesos(q.cartera_castigada) }}</p>
             </app-tablero-tarjeta>
             <app-tablero-tarjeta titulo="Caja neta" [valor]="pesos(q.caja_neta)" [clase]="neto(q.caja_neta)" icono="lucideBanknote">
-              <p>De toda la quincena</p>
+              <p>Entró {{ pesos(q.total_cobrado) }} · salió {{ pesos(q.total_cobrado - q.caja_neta) }}</p>
             </app-tablero-tarjeta>
             <app-tablero-tarjeta titulo="Vendido / cobrado" [valor]="pesos(q.total_vendido)" icono="lucideReceipt">
               <p>Cobrado {{ pesos(q.total_cobrado) }}</p>
             </app-tablero-tarjeta>
-            <app-tablero-tarjeta titulo="Leche por pagar" [valor]="pesos(q.leche_por_pagar)" icono="lucideMilk">
-              <p>{{ numero(q.leche_litros) }} L recibidos</p>
+            <app-tablero-tarjeta titulo="Proveedores por pagar" [valor]="pesos(q.por_pagar_proveedores)" icono="lucideHandCoins">
+              <p>De esta quincena: compras a crédito sin pagar · {{ numero(q.leche_litros) }} L de leche recibidos</p>
+              <a routerLink="/cuentas-proveedores" class="mt-1 inline-flex min-h-8 items-center text-xs font-medium text-primary hover:underline max-lg:min-h-11">Ver a quién le debo</a>
             </app-tablero-tarjeta>
           </div>
         } @else {
@@ -120,8 +121,8 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
         </div>
       </section>
 
-      <!-- CARTERA · INVENTARIO · LECHEROS -->
-      <section class="mb-8" aria-label="Cartera, inventario y lecheros">
+      <!-- CARTERA · INVENTARIO · PROVEEDORES -->
+      <section class="mb-8" aria-label="Cartera, inventario y proveedores">
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <app-tablero-bloque titulo="Cartera" icono="lucideWallet" [enlaces]="enlacesCartera">
             <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Saldo total</dt><dd class="font-semibold tabular-nums" data-testid="cartera-saldo">{{ pesos(t.cartera.saldo_total) }}</dd></div>
@@ -139,9 +140,9 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
             <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Lotes por vencer (7 días)</dt><dd class="font-medium tabular-nums" [class.text-warning]="t.inventario.lotes_por_vencer > 0">{{ numero(t.inventario.lotes_por_vencer) }}</dd></div>
           </app-tablero-bloque>
 
-          <app-tablero-bloque titulo="Lecheros" icono="lucideMilk" [enlaces]="enlacesLecheros">
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Saldo por pagar</dt><dd class="font-semibold tabular-nums" data-testid="lecheros-saldo">{{ pesos(t.lecheros.saldo_por_pagar) }}</dd></div>
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Proveedores con saldo</dt><dd class="font-medium tabular-nums">{{ numero(t.lecheros.proveedores_con_saldo) }}</dd></div>
+          <app-tablero-bloque titulo="Proveedores" icono="lucideHandCoins" [enlaces]="enlacesProveedores">
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Saldo por pagar (todas las quincenas)</dt><dd class="font-semibold tabular-nums" data-testid="proveedores-saldo">{{ pesos(t.proveedores.saldo_por_pagar) }}</dd></div>
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Proveedores con saldo</dt><dd class="font-medium tabular-nums">{{ numero(t.proveedores.proveedores_con_saldo) }}</dd></div>
           </app-tablero-bloque>
         </div>
       </section>
@@ -190,9 +191,9 @@ export class TableroPageComponent {
   protected readonly enlacesCartera = [{ etiqueta: 'Ver cartera', ruta: '/cartera' }];
   protected readonly enlacesInventario = [
     { etiqueta: 'Ver inventario', ruta: '/inventario' },
-    { etiqueta: 'Ver insumos', ruta: '/insumos' },
+    { etiqueta: 'Ver materias primas', ruta: '/insumos' },
   ];
-  protected readonly enlacesLecheros = [{ etiqueta: 'Ver recepción y pagos', ruta: '/acopio', queryParams: { pestana: 'lecheros' } }];
+  protected readonly enlacesProveedores = [{ etiqueta: 'Ver cuentas y pagos', ruta: '/cuentas-proveedores' }];
 
   private readonly cargadoEn = signal<Date | null>(null);
   /** «Updated at» is stamped when the figures ARRIVE (not from the resource status, which a synchronous answer would skip). */

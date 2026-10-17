@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
 import { ServerDataTableComponent } from '../../shared/ui/server-data-table/server-data-table.component';
@@ -22,8 +25,24 @@ export function tonoRechazo(porcentaje: number): ChipTono {
 @Component({
   selector: 'app-calidad-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, ServerDataTableComponent, StatusChipComponent],
+  imports: [DataTableCellDirective, IconComponent, RouterLink, ServerDataTableComponent, StatusChipComponent],
   template: `
+    @if (umbrales.value(); as u) {
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4" data-testid="tarjeta-umbrales">
+        <div>
+          <h3 class="text-sm font-semibold">Umbrales de control de calidad para leche cruda</h3>
+          <p class="text-xs text-muted-foreground">
+            Temperatura máxima: <strong class="text-foreground">{{ u.temperatura_max }} °C</strong> · Acidez máxima: <strong class="text-foreground">{{ u.acidez_max }} °D</strong>.
+            Las entregas que superen estos umbrales se rechazan automáticamente al registrar la compra.
+          </p>
+        </div>
+        <a routerLink="/insumos" [queryParams]="{ pestana: 'compras' }" class="sila-btn sila-btn-primary sila-btn-sm inline-flex items-center gap-1.5">
+          <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
+          Registrar compra de leche
+        </a>
+      </div>
+    }
+
     <p class="mb-3 text-sm text-muted-foreground">
       Promedios y rechazos por proveedor, con todas sus entregas. El porcentaje se marca en rojo por encima de {{ peligro }} % y en ámbar por encima de {{ alerta }} %.
     </p>
@@ -36,7 +55,7 @@ export function tonoRechazo(porcentaje: number): ChipTono {
       [error]="listado.error()"
       [sort]="listado.sort()"
       vacioTitulo="Aún no hay entregas registradas"
-      vacioAyuda="La calidad se calcula a partir de las recepciones."
+      vacioAyuda="La calidad se calcula a partir de las compras de leche."
       (pageChange)="listado.irAPagina($event)"
       (sizeChange)="listado.cambiarTamano($event)"
       (sortChange)="listado.sort.set($event)"
@@ -57,6 +76,7 @@ export function tonoRechazo(porcentaje: number): ChipTono {
 export class CalidadTabComponent {
   private readonly repo = inject(ACOPIO_REPOSITORY);
 
+  protected readonly umbrales = rxResource({ stream: () => this.repo.umbrales() });
   protected readonly peligro = RECHAZO_PELIGRO;
   protected readonly alerta = RECHAZO_ALERTA;
   protected readonly numero = formatoNumero;

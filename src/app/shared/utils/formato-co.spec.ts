@@ -1,4 +1,4 @@
-import { formatoFechaHora } from './formato-co';
+import { formatearNumerosEnTexto, formatoFechaHora } from './formato-co';
 
 describe('formatoFechaHora', () => {
   it('lee la marca sin zona como UTC y la muestra en hora de Colombia (UTC-5)', () => {
@@ -19,5 +19,17 @@ describe('formatoFechaHora', () => {
     expect(formatoFechaHora(undefined)).toBe('—');
     expect(formatoFechaHora('')).toBe('—');
     expect(formatoFechaHora('no es una fecha')).toBe('—');
+  });
+});
+
+describe('formatearNumerosEnTexto', () => {
+  it('pone separador de miles a las cantidades enteras del mensaje del servidor', () => {
+    expect(formatearNumerosEnTexto('Falta Leche cruda: se necesitan 50000 LT y hay 2468.')).toBe('Falta Leche cruda: se necesitan 50.000 LT y hay 2.468.');
+    expect(formatearNumerosEnTexto('esa quincena ya se pago al proveedor (195000).')).toBe('esa quincena ya se pago al proveedor (195.000).');
+  });
+
+  it('no toca años, fechas, decimales, códigos ni números cortos', () => {
+    expect(formatearNumerosEnTexto('Quincena de 2026 cerrada el 2026-10-31 y 31/10/2026')).toBe('Quincena de 2026 cerrada el 2026-10-31 y 31/10/2026');
+    expect(formatearNumerosEnTexto('Faltan 1234,5 y 1234.5 unidades; lote ABC12345; hay 500')).toBe('Faltan 1234,5 y 1234.5 unidades; lote ABC12345; hay 500');
   });
 });

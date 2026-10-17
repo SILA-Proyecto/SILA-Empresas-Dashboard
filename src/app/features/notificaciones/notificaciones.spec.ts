@@ -65,7 +65,8 @@ describe('lógica de «no vistas»', () => {
   it('iconoDe da un icono por tipo, y uno por defecto para un tipo desconocido', () => {
     expect(iconoDe('INSUMO_AGOTADO')).toBe('lucidePackage');
     expect(iconoDe('CARTERA_VENCIDA')).toBe('lucideWallet');
-    expect(iconoDe('LECHE_POR_PAGAR')).toBe('lucideMilk');
+    expect(iconoDe('PROVEEDORES_POR_PAGAR')).toBe('lucideHandCoins');
+    expect(iconoDe('PROVEEDORES_POR_PAGAR')).toBe('lucideHandCoins');
     expect(iconoDe('TIPO_NUEVO')).toBe('lucideBell');
   });
 });

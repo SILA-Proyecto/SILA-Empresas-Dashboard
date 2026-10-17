@@ -1,4 +1,5 @@
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
+import { formatearNumerosEnTexto } from './formato-co';
 
 /**
  * Text for a failed call. For the codes in `delServidor` the SERVER's message is shown as it is (it carries
@@ -9,7 +10,7 @@ export function mensajeDeFallo(errores: ApiErrorService, fallo: unknown, delServ
   const error = causaDe(fallo);
   if (isApiError(error) && delServidor.includes(error.code)) {
     const campos = error.fields ? Object.values(error.fields).join(' ') : '';
-    return campos && !error.message.includes(campos) ? `${error.message} ${campos}` : error.message;
+    return formatearNumerosEnTexto(campos && !error.message.includes(campos) ? `${error.message} ${campos}` : error.message);
   }
   return errores.describe(fallo).mensaje;
 }

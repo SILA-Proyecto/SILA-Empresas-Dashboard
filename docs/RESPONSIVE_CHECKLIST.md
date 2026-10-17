@@ -34,6 +34,11 @@ Se midió cada pantalla, ya con sesión de administrador, en los cuatro anchos. 
 | `/auditoria?pestana=errores` | OK | OK | OK | OK |
 | `/cuenta` | OK | OK | OK | OK |
 | `/resultado-quincena` | OK | OK | OK | OK |
+| `/insumos?pestana=insumos` | OK | OK | OK | OK |
+| `/insumos?pestana=compras` | OK | OK | OK | OK |
+| `/cuentas-proveedores?pestana=saldos` | OK | OK | OK | OK |
+| `/cuentas-proveedores?pestana=pagos` | OK | OK | OK | OK |
+| `/cuentas-proveedores?pestana=precios` | OK | OK | OK | OK |
 | `/archivos` (raíz, carpeta, «Ver documento») | OK | OK | OK | OK |
 | `/archivos/MANUAL` + subir + nueva carpeta (ADMIN) | OK | OK | OK | OK |
 | `/archivos/drive` y `/archivos/accesos` (ADMIN) | OK | OK | OK | OK |

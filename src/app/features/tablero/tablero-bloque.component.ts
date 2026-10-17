@@ -8,7 +8,7 @@ export interface EnlaceBloque {
   queryParams?: Record<string, string>;
 }
 
-/** A block of figures (Cartera, Inventario, Lecheros) with a link to its module. The rows are projected. */
+/** A block of figures (Cartera, Inventario, Proveedores) with a link to its module. The rows are projected. */
 @Component({
   selector: 'app-tablero-bloque',
   changeDetection: ChangeDetectionStrategy.OnPush,

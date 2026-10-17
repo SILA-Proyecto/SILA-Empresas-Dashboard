@@ -6,7 +6,7 @@ import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
 import { SilaValidators, limpiarTexto } from '../../../shared/validators/sila-validators';
 import { CATALOGOS_REPOSITORY } from '../data/catalogos.provider';
-import { Proveedor, ProveedorGuardar, TIPOS_DOCUMENTO, TIPOS_PROVEEDOR, TipoDocumento, TipoProveedor } from '../models/catalogos.models';
+import { Proveedor, ProveedorGuardar, TIPOS_DOCUMENTO, TipoDocumento } from '../models/catalogos.models';
 
 @Component({
   selector: 'app-proveedor-form-dialog',
@@ -28,7 +28,6 @@ export class ProveedorFormDialogComponent {
   readonly cerrar = output<void>();
 
   protected readonly tiposDocumento = TIPOS_DOCUMENTO;
-  protected readonly tiposProveedor = TIPOS_PROVEEDOR;
   protected readonly titulo = computed(() => (this.proveedor() ? 'Editar proveedor' : 'Nuevo proveedor'));
   protected readonly guardando = signal(false);
   protected readonly errorGeneral = signal<string | null>(null);
@@ -39,7 +38,6 @@ export class ProveedorFormDialogComponent {
     numero_documento: ['', [SilaValidators.requerido, SilaValidators.documento]],
     nombre: ['', [SilaValidators.requerido, SilaValidators.longitud(1, 120)]],
     telefono: ['', SilaValidators.telefono],
-    tipo_proveedor: ['LECHERO' as TipoProveedor, Validators.required],
   });
 
   constructor() {
@@ -52,11 +50,10 @@ export class ProveedorFormDialogComponent {
         numero_documento: proveedor?.numero_documento ?? '',
         nombre: proveedor?.nombre ?? '',
         telefono: proveedor?.telefono ?? '',
-        tipo_proveedor: proveedor?.tipo_proveedor ?? 'LECHERO',
       });
-      // The backend ignores document and supplier type on edit.
-      const { tipo_documento, numero_documento, tipo_proveedor } = this.form.controls;
-      for (const control of [tipo_documento, numero_documento, tipo_proveedor]) {
+      // The backend ignores document on edit.
+      const { tipo_documento, numero_documento } = this.form.controls;
+      for (const control of [tipo_documento, numero_documento]) {
         if (proveedor) {
           control.disable();
         } else {
@@ -79,7 +76,6 @@ export class ProveedorFormDialogComponent {
       numero_documento: valor.numero_documento.trim(),
       nombre: limpiarTexto(valor.nombre),
       telefono: valor.telefono.trim(),
-      tipo_proveedor: valor.tipo_proveedor,
     };
     const actual = this.proveedor();
     const peticion = actual ? this.repo.actualizarProveedor(actual.id_proveedor, datos) : this.repo.crearProveedor(datos);

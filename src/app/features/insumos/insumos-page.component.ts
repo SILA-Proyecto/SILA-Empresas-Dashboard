@@ -9,20 +9,20 @@ import { ComprasTabComponent } from './compras-tab.component';
 import { InsumosTabComponent } from './insumos-tab.component';
 
 const PESTANAS: readonly Pestana[] = [
-  { id: 'insumos', etiqueta: 'Insumos', icono: 'lucidePackage' },
+  { id: 'insumos', etiqueta: 'Materias primas', icono: 'lucidePackage' },
   { id: 'compras', etiqueta: 'Compras', icono: 'lucideShoppingCart' },
   { id: 'ajustes', etiqueta: 'Ajustes', icono: 'lucideSlidersHorizontal' },
 ];
 
-/** Insumos (azúcar, envases…): stock y costo promedio, compras y ajustes. La pestaña vive en `?pestana=`. */
+/** Materias primas (leche, azúcar, envases…): stock y costo promedio, compras y ajustes. La pestaña vive en `?pestana=`. */
 @Component({
   selector: 'app-insumos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AjustesInsumoTabComponent, ComprasTabComponent, InsumosTabComponent, PageHeaderComponent, PestanasComponent],
   template: `
-    <app-page-header title="Insumos" description="Lo que se compra para fabricar (azúcar, envases…): su stock, su costo promedio y lo que se gasta en cada lote." />
+    <app-page-header title="Materias primas" description="Leche, azúcar, envases…: stock, costo promedio ponderado, compras y ajustes." />
 
-    <app-pestanas [pestanas]="pestanas" [activa]="activa()" etiqueta="Insumos" (seleccionada)="seleccionar($event)" />
+    <app-pestanas [pestanas]="pestanas" [activa]="activa()" etiqueta="Materias primas" (seleccionada)="seleccionar($event)" />
 
     <section role="tabpanel" [id]="'panel-' + activa()" [attr.aria-labelledby]="'tab-' + activa()">
       @switch (activa()) {

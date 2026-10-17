@@ -25,7 +25,7 @@ import type { Insumo } from './models/insumos.models';
   template: `
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
       <div class="sila-card p-4">
-        <p class="text-sm text-muted-foreground">Insumos activos</p>
+        <p class="text-sm text-muted-foreground">Materias primas activas</p>
         <p class="mt-1 text-2xl font-bold tabular-nums">{{ resumen.hasValue() ? numero(resumen.value().total_insumos) : '—' }}</p>
       </div>
       <div class="sila-card p-4">
@@ -33,7 +33,7 @@ import type { Insumo } from './models/insumos.models';
         <p class="mt-1 text-2xl font-bold tabular-nums" [class.text-destructive]="resumen.hasValue() && resumen.value().bajo_minimo > 0" data-testid="bajo-minimo">{{ resumen.hasValue() ? numero(resumen.value().bajo_minimo) : '—' }}</p>
       </div>
       <div class="sila-card p-4">
-        <p class="text-sm text-muted-foreground">Valor del inventario de insumos</p>
+        <p class="text-sm text-muted-foreground">Valor del inventario de materias primas</p>
         <p class="mt-1 text-2xl font-bold tabular-nums">{{ resumen.hasValue() ? cop(resumen.value().valor_total) : '—' }}</p>
         <p class="mt-0.5 text-xs text-muted-foreground">A costo promedio.</p>
       </div>
@@ -61,26 +61,36 @@ import type { Insumo } from './models/insumos.models';
       </label>
       <button *hasRole="'ADMIN'" type="button" data-accion class="sila-btn sila-btn-primary ms-auto" (click)="abrirNuevo()">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
-        Nuevo insumo
+        Nueva materia prima
       </button>
     </app-filtros-plegables>
 
     <app-server-data-table
-      titulo="Insumos"
+      titulo="Materias primas"
       [columns]="columnas"
       [page]="listado.datos()"
       [rowId]="insumoId"
       [cargando]="listado.cargando()"
       [error]="listado.error()"
       [sort]="listado.sort()"
-      vacioTitulo="No hay insumos que coincidan"
-      vacioAyuda="Cambia los filtros o crea un insumo nuevo."
+      vacioTitulo="No hay materias primas que coincidan"
+      vacioAyuda="Cambia los filtros o registra una materia prima nueva."
       (pageChange)="listado.irAPagina($event)"
       (sizeChange)="listado.cambiarTamano($event)"
       (sortChange)="listado.sort.set($event)"
       (reintentar)="listado.recargar()"
     >
       <ng-template appDataTableCell="codigo" [cellRows]="listado.datos()?.items" let-i><span class="font-mono text-xs">{{ i.codigo }}</span></ng-template>
+      <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-i>
+        <div class="flex flex-col">
+          <span class="font-medium">{{ i.nombre }}</span>
+          @if (i.requiere_calidad || i.codigo === 'LECHE') {
+            <span class="mt-0.5">
+              <app-status-chip texto="Leche · control de calidad" tono="info" />
+            </span>
+          }
+        </div>
+      </ng-template>
       <ng-template appDataTableCell="stock_actual" [cellRows]="listado.datos()?.items" let-i>
         <span class="inline-flex flex-wrap items-center justify-end gap-2">
           <span class="whitespace-nowrap font-medium tabular-nums" [class.text-destructive]="i.bajo_minimo">{{ numero(i.stock_actual) }} {{ i.unidad_medida }}</span>
@@ -101,10 +111,12 @@ import type { Insumo } from './models/insumos.models';
             <app-icon name="lucidePencil" class="size-3.5" aria-hidden="true" />
             Editar<span class="sr-only"> {{ i.nombre }}</span>
           </button>
-          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="cambiandoEstado.set(i)">
-            <app-icon name="lucidePower" class="size-3.5" aria-hidden="true" />
-            {{ i.activo ? 'Desactivar' : 'Activar' }}<span class="sr-only"> {{ i.nombre }}</span>
-          </button>
+          @if (!i.requiere_calidad && i.codigo !== 'LECHE') {
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="cambiandoEstado.set(i)">
+              <app-icon name="lucidePower" class="size-3.5" aria-hidden="true" />
+              {{ i.activo ? 'Desactivar' : 'Activar' }}<span class="sr-only"> {{ i.nombre }}</span>
+            </button>
+          }
         </div>
       </ng-template>
     </app-server-data-table>
@@ -113,7 +125,7 @@ import type { Insumo } from './models/insumos.models';
 
     <app-confirm-dialog
       [open]="cambiandoEstado() !== null"
-      [titulo]="cambiandoEstado()?.activo ? 'Desactivar insumo' : 'Activar insumo'"
+      [titulo]="cambiandoEstado()?.activo ? 'Desactivar materia prima' : 'Activar materia prima'"
       [mensaje]="cambiandoEstado()?.activo ? '«' + cambiandoEstado()!.nombre + '» dejará de ofrecerse en compras, ajustes y recetas nuevas. No se puede desactivar si la receta de un producto activo lo usa.' : 'Volverá a ofrecerse en compras, ajustes y recetas.'"
       [textoConfirmar]="cambiandoEstado()?.activo ? 'Desactivar' : 'Activar'"
       [peligro]="!!cambiandoEstado()?.activo"
@@ -177,7 +189,7 @@ export class InsumosTabComponent {
     this.editando.set(null);
     this.listado.recargar();
     this.resumen.reload();
-    this.toast.exito(`Insumo «${insumo.nombre}» ${nuevo ? 'creado' : 'actualizado'}.`);
+    this.toast.exito(`Materia prima «${insumo.nombre}» ${nuevo ? 'creada' : 'actualizada'}.`);
   }
 
   protected confirmarEstado(): void {
@@ -193,7 +205,7 @@ export class InsumosTabComponent {
           this.cambiandoEstado.set(null);
           this.listado.recargar();
           this.resumen.reload();
-          this.toast.exito(`Insumo «${r.nombre}» ${r.activo ? 'activado' : 'desactivado'}.`);
+          this.toast.exito(`Materia prima «${r.nombre}» ${r.activo ? 'activada' : 'desactivada'}.`);
         },
         error: (fallo: unknown) => {
           this.procesando.set(false);

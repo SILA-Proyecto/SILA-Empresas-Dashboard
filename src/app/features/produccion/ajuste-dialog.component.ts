@@ -8,7 +8,7 @@ import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { OpcionSelector, SelectorBuscableComponent } from '../../shared/ui/selector-buscable/selector-buscable.component';
 import { aplicarCamposDelServidor } from '../../shared/utils/errores-formulario';
-import { formatoNumero } from '../../shared/utils/formato-co';
+import { formatearNumerosEnTexto, formatoNumero } from '../../shared/utils/formato-co';
 import { SilaValidators } from '../../shared/validators/sila-validators';
 import { PRODUCCION_REPOSITORY } from './data/produccion.provider';
 import { ProductoOpcion, TIPOS_AJUSTE } from './models/ajuste-tipos';
@@ -194,10 +194,10 @@ export class AjusteDialogComponent {
     switch (error.code) {
       case 20002:
         // The server's text says which stock would go negative; the fixed text of ApiErrorService is too generic here.
-        this.errorGeneral.set(error.message);
+        this.errorGeneral.set(formatearNumerosEnTexto(error.message));
         break;
       case 20006:
-        this.errorGeneral.set(error.message);
+        this.errorGeneral.set(formatearNumerosEnTexto(error.message));
         break;
       case 20017:
         this.clave.descartar();

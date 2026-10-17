@@ -28,7 +28,7 @@ function año2026(): Periodo[] {
   return Array.from({ length: 24 }, (_, i) => {
     const id = i + 1;
     if (id === 19) return OCTUBRE_1;
-    if (id < 19) return periodoDe(id, { ingresos_ventas: 100000 * id, resultado_estimado: 10000 * id, caja_neta: 5000 * id, leche_por_pagar: 1000, cartera_pendiente: 2000 });
+    if (id < 19) return periodoDe(id, { ingresos_ventas: 100000 * id, resultado_estimado: 10000 * id, caja_neta: 5000 * id, por_pagar_proveedores: 1000, cartera_pendiente: 2000 });
     return periodoDe(id, { estado: 'ABIERTA' });
   });
 }
@@ -139,7 +139,7 @@ describe('Resultado por quincena', () => {
       expect(t('[data-testid=bloque-resultado]')).toContain('Estimación de gestión, no un estado contable.');
     });
 
-    it('CAJA: cobrado (con contado y abonos) − pagos a lecheros − insumos − gastos = caja_neta', async () => {
+    it('CAJA: cobrado (con contado y abonos) − pagos a proveedores − compras de contado − gastos = caja_neta', async () => {
       const { t } = await abrir();
       const bloque = t('[data-testid=lineas-caja]');
 
@@ -147,8 +147,8 @@ describe('Resultado por quincena', () => {
       expect(sinEsp(bloque)).toContain(sinEsp('+ Cobrado $ 700.000'));
       expect(sinEsp(bloque)).toContain(sinEsp('De ventas de contado $ 400.000'));
       expect(sinEsp(bloque)).toContain(sinEsp('De abonos de cartera $ 300.000'));
-      expect(sinEsp(bloque)).toContain(sinEsp('− Pagos a lecheros $ 200.000'));
-      expect(sinEsp(bloque)).toContain(sinEsp('− Compras de insumos $ 40.000'));
+      expect(sinEsp(bloque)).toContain(sinEsp('− Pagos a proveedores $ 200.000'));
+      expect(sinEsp(bloque)).toContain(sinEsp('− Compras de contado $ 40.000'));
       expect(sinEsp(bloque)).toContain(sinEsp('− Gastos $ 50.000'));
       expect(sinEsp(bloque)).toContain(sinEsp('= Caja neta $ 410.000'));
     });
@@ -162,7 +162,7 @@ describe('Resultado por quincena', () => {
       expect(t('[data-testid=leche-comprada]')).toBe('$ 450.000');
       expect(t('[data-testid=leche-por-pagar]')).toBe('$ 250.000');
       expect(t('[data-testid=cartera-pendiente]')).toBe('$ 371.000');
-      expect(sinEsp(t('[data-testid=bloque-deudas]'))).toContain(sinEsp('La leche comprada NO resta en el resultado'));
+      expect(sinEsp(t('[data-testid=bloque-deudas]'))).toContain(sinEsp('Las materias primas compradas NO restan en el resultado'));
       expect(sinEsp(t('[data-testid=bloque-deudas]'))).toContain(sinEsp('1.500 L'));
       expect(sinEsp(t('[data-testid=bloque-deudas]'))).toContain(sinEsp('120,5 L'));
       expect(sinEsp(t('[data-testid=bloque-deudas]'))).toContain(sinEsp('Total vendido (con IVA) $ 1.071.000'));

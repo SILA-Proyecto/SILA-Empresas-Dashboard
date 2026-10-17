@@ -12,7 +12,7 @@ import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { crearListado } from '../../../shared/utils/listado';
 import { CATALOGOS_REPOSITORY } from '../data/catalogos.provider';
-import { FiltroActivo, Proveedor, TipoProveedor, activoDesdeFiltro } from '../models/catalogos.models';
+import { FiltroActivo, Proveedor, activoDesdeFiltro } from '../models/catalogos.models';
 import { ProveedorFormDialogComponent } from './proveedor-form-dialog.component';
 
 @Component({
@@ -37,7 +37,6 @@ export class ProveedoresTabComponent {
 
   protected readonly texto = signal('');
   protected readonly filtroActivo = signal<FiltroActivo>('TODOS');
-  protected readonly filtroTipo = signal<TipoProveedor | 'TODOS'>('TODOS');
   private readonly textoBusqueda = toSignal(
     toObservable(this.texto).pipe(
       debounceTime(300),
@@ -51,7 +50,6 @@ export class ProveedoresTabComponent {
     filtros: () => ({
       texto: this.textoBusqueda() || undefined,
       activo: activoDesdeFiltro(this.filtroActivo()),
-      tipo_proveedor: this.filtroTipo() === 'TODOS' ? undefined : (this.filtroTipo() as TipoProveedor),
     }),
     cargar: (query) => this.repo.listarProveedores(query),
     sort: 'nombre,asc',
@@ -61,7 +59,6 @@ export class ProveedoresTabComponent {
     { key: 'numero_documento', label: 'Documento', value: (p) => p.numero_documento },
     { key: 'nombre', label: 'Nombre', rol: 'titulo', value: (p) => p.nombre },
     { key: 'telefono', label: 'Teléfono', sortable: false, value: (p) => p.telefono },
-    { key: 'tipo_proveedor', label: 'Tipo', value: (p) => p.tipo_proveedor },
     { key: 'activo', label: 'Estado', value: (p) => (p.activo ? 1 : 0) },
     { key: 'acciones', label: 'Acciones', sortable: false, align: 'end', value: () => '' },
   ];
@@ -75,10 +72,6 @@ export class ProveedoresTabComponent {
 
   protected cambiarFiltroActivo(valor: string): void {
     this.filtroActivo.set(valor as FiltroActivo);
-  }
-
-  protected cambiarFiltroTipo(valor: string): void {
-    this.filtroTipo.set(valor as TipoProveedor | 'TODOS');
   }
 
   protected alGuardar(proveedor: Proveedor): void {

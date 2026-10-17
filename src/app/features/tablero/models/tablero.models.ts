@@ -38,7 +38,7 @@ export interface TableroQuincena {
   resultado_estimado: number;
   caja_neta: number;
   leche_litros: number;
-  leche_por_pagar: number;
+  por_pagar_proveedores: number;
 }
 
 export interface TableroCartera {
@@ -60,8 +60,8 @@ export interface TableroInventario {
   lotes_por_vencer: number;
 }
 
-export interface TableroLecheros {
-  /** All that is owed to the milk suppliers (history, not only this quincena). */
+export interface TableroProveedores {
+  /** All that is owed to suppliers (history, not only this quincena). */
   saldo_por_pagar: number;
   proveedores_con_saldo: number;
 }
@@ -90,7 +90,7 @@ export interface Tablero {
   quincena: TableroQuincena | null;
   cartera: TableroCartera;
   inventario: TableroInventario;
-  lecheros: TableroLecheros;
+  proveedores: TableroProveedores;
   alertas: TableroAlertas;
   /** Always 7 rows, from 6 days ago to today (the last one); days without sales come with 0. */
   ventas_semana: VentaDia[];

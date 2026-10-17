@@ -43,7 +43,7 @@ function opcion<T extends string>(valor: string | null, validos: readonly { valo
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ComprobanteDetalleDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, PageHeaderComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
-    <app-page-header title="Comprobantes" description="Todos los movimientos de plata: ventas, abonos, pagos a lecheros, compras de insumos y gastos. Son documentos internos, no facturas electrónicas." />
+    <app-page-header title="Comprobantes" description="Todos los movimientos de plata: ventas, abonos, pagos a proveedores, compras de materias primas y gastos. Son documentos internos, no facturas electrónicas." />
 
     <section class="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4" aria-label="Resumen" data-testid="resumen-comprobantes" aria-live="polite">
       <div class="sila-card p-4">

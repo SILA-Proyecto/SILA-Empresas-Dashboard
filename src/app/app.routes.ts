@@ -57,6 +57,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/acopio/acopio.routes').then((m) => m.ACOPIO_ROUTES),
       },
       {
+        path: 'cuentas-proveedores',
+        loadChildren: () => import('./features/cuentas-proveedores/cuentas-proveedores.routes').then((m) => m.CUENTAS_PROVEEDORES_ROUTES),
+      },
+      {
         path: 'produccion',
         loadChildren: () => import('./features/produccion/produccion.routes').then((m) => m.PRODUCCION_ROUTES),
       },

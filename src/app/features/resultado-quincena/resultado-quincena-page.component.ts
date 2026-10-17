@@ -152,11 +152,11 @@ function pendiente(estado: string): boolean {
         <!-- Apart: what is owed and what is still to be collected -->
         <section class="sila-card mb-6 p-5" aria-labelledby="rq-debe" data-testid="bloque-deudas">
           <h2 id="rq-debe" class="mb-1 text-base font-semibold">Para saber cuánto se debe y cuánto falta cobrar</h2>
-          <p class="mb-3 text-xs text-muted-foreground">Aparte: no suma a ninguno de los dos resultados. La leche comprada NO resta en el resultado: su costo entra por el costo de producción cuando se produce.</p>
+          <p class="mb-3 text-xs text-muted-foreground">Aparte: no suma a ninguno de los dos resultados. Las materias primas compradas NO restan en el resultado: su costo entra por el costo de producción cuando se produce.</p>
           <dl class="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Leche comprada</dt><dd class="tabular-nums" data-testid="leche-comprada">{{ cop(p.leche_comprada) }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Leche pagada</dt><dd class="tabular-nums">{{ cop(p.leche_pagada) }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="font-medium">Leche por pagar</dt><dd class="font-semibold tabular-nums" data-testid="leche-por-pagar">{{ cop(p.leche_por_pagar) }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Materias primas compradas</dt><dd class="tabular-nums" data-testid="leche-comprada">{{ cop(p.compras_materias_primas ?? p.leche_comprada ?? 0) }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Pagado a proveedores</dt><dd class="tabular-nums">{{ cop(p.pagado_proveedores) }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="font-medium">Por pagar a proveedores</dt><dd class="font-semibold tabular-nums" data-testid="leche-por-pagar">{{ cop(p.por_pagar_proveedores) }}</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Litros recibidos (aprobados)</dt><dd class="tabular-nums">{{ numero(p.leche_litros) }} L</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Litros rechazados</dt><dd class="tabular-nums">{{ numero(p.leche_litros_rechazados) }} L</dd></div>
             <div class="flex justify-between gap-3"><dt class="font-medium">Cartera pendiente</dt><dd class="font-semibold tabular-nums" data-testid="cartera-pendiente">{{ cop(p.cartera_pendiente) }}</dd></div>
@@ -220,7 +220,7 @@ function pendiente(estado: string): boolean {
                       <span class="text-muted-foreground">Ingresos</span><span class="text-end tabular-nums">{{ cop(p.ingresos_ventas) }}</span>
                       <span class="text-muted-foreground">Resultado</span><app-monto class="text-end" [valor]="p.resultado_estimado" />
                       <span class="text-muted-foreground">Caja neta</span><app-monto class="text-end" [valor]="p.caja_neta" />
-                      <span class="text-muted-foreground">Leche por pagar</span><span class="text-end tabular-nums">{{ cop(p.leche_por_pagar) }}</span>
+                      <span class="text-muted-foreground">Por pagar</span><span class="text-end tabular-nums">{{ cop(p.por_pagar_proveedores) }}</span>
                       <span class="text-muted-foreground">Cartera pendiente</span><span class="text-end tabular-nums">{{ cop(p.cartera_pendiente) }}</span>
                     </span>
                   </button>
@@ -232,7 +232,7 @@ function pendiente(estado: string): boolean {
                   <span class="text-muted-foreground">Ingresos</span><span class="text-end tabular-nums">{{ cop(totales().ingresos_ventas) }}</span>
                   <span class="text-muted-foreground">Resultado</span><app-monto class="text-end" [valor]="totales().resultado_estimado" />
                   <span class="text-muted-foreground">Caja neta</span><app-monto class="text-end" [valor]="totales().caja_neta" />
-                  <span class="text-muted-foreground">Leche por pagar</span><span class="text-end tabular-nums">{{ cop(totales().leche_por_pagar) }}</span>
+                  <span class="text-muted-foreground">Por pagar</span><span class="text-end tabular-nums">{{ cop(totales().por_pagar_proveedores) }}</span>
                   <span class="text-muted-foreground">Cartera pendiente</span><span class="text-end tabular-nums">{{ cop(totales().cartera_pendiente) }}</span>
                 </span>
               </li>
@@ -240,7 +240,7 @@ function pendiente(estado: string): boolean {
           } @else {
             <div class="sila-card overflow-x-auto">
               <table class="w-full min-w-[720px] text-left text-sm" data-testid="tabla-anio">
-                <caption class="sr-only">Quincenas del año {{ anio() }}: ingresos, resultado, caja neta, leche por pagar y cartera pendiente</caption>
+                <caption class="sr-only">Quincenas del año {{ anio() }}: ingresos, resultado, caja neta, por pagar y cartera pendiente</caption>
                 <thead class="border-b border-border text-xs text-muted-foreground">
                   <tr>
                     <th scope="col" class="px-3 py-2 font-medium">Quincena</th>
@@ -248,7 +248,7 @@ function pendiente(estado: string): boolean {
                     <th scope="col" class="px-3 py-2 text-end font-medium">Ingresos</th>
                     <th scope="col" class="px-3 py-2 text-end font-medium">Resultado</th>
                     <th scope="col" class="px-3 py-2 text-end font-medium">Caja neta</th>
-                    <th scope="col" class="px-3 py-2 text-end font-medium">Leche por pagar</th>
+                    <th scope="col" class="px-3 py-2 text-end font-medium">Por pagar</th>
                     <th scope="col" class="px-3 py-2 text-end font-medium">Cartera pendiente</th>
                   </tr>
                 </thead>
@@ -262,7 +262,7 @@ function pendiente(estado: string): boolean {
                       <td class="px-3 py-1.5 text-end tabular-nums">{{ cop(p.ingresos_ventas) }}</td>
                       <td class="px-3 py-1.5 text-end"><app-monto [valor]="p.resultado_estimado" /></td>
                       <td class="px-3 py-1.5 text-end"><app-monto [valor]="p.caja_neta" /></td>
-                      <td class="px-3 py-1.5 text-end tabular-nums">{{ cop(p.leche_por_pagar) }}</td>
+                      <td class="px-3 py-1.5 text-end tabular-nums">{{ cop(p.por_pagar_proveedores) }}</td>
                       <td class="px-3 py-1.5 text-end tabular-nums">{{ cop(p.cartera_pendiente) }}</td>
                     </tr>
                   }
@@ -273,7 +273,7 @@ function pendiente(estado: string): boolean {
                     <td class="px-3 py-2 text-end tabular-nums">{{ cop(totales().ingresos_ventas) }}</td>
                     <td class="px-3 py-2 text-end"><app-monto [valor]="totales().resultado_estimado" [destacado]="true" /></td>
                     <td class="px-3 py-2 text-end"><app-monto [valor]="totales().caja_neta" [destacado]="true" /></td>
-                    <td class="px-3 py-2 text-end tabular-nums">{{ cop(totales().leche_por_pagar) }}</td>
+                    <td class="px-3 py-2 text-end tabular-nums">{{ cop(totales().por_pagar_proveedores) }}</td>
                     <td class="px-3 py-2 text-end tabular-nums">{{ cop(totales().cartera_pendiente) }}</td>
                   </tr>
                 </tfoot>

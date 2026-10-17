@@ -295,8 +295,8 @@ export class ExploradorPageComponent {
   protected readonly tipos: readonly { valor: TipoEntidadArchivo; etiqueta: string }[] = [
     { valor: 'VENTA', etiqueta: 'Venta' },
     { valor: 'ABONO', etiqueta: 'Abono' },
-    { valor: 'PAGO_LECHERO', etiqueta: 'Pago a lecheros' },
-    { valor: 'COMPRA_INSUMO', etiqueta: 'Compra de insumos' },
+    { valor: 'PAGO_PROVEEDOR', etiqueta: 'Pago a proveedor' },
+    { valor: 'COMPRA', etiqueta: 'Compra' },
     { valor: 'GASTO', etiqueta: 'Gasto' },
     { valor: 'ARCHIVO', etiqueta: 'Archivo subido' },
   ];

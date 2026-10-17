@@ -93,14 +93,15 @@ describe('insignias y títulos', () => {
   });
 
   it('un comprobante muestra su número (sin guion bajo) y el de anulación lo dice; un archivo subido, su nombre', () => {
-    expect(tituloArchivo({ numero: 'COMPRA_INSUMO #25', nombre_archivo: 'x.pdf', version: 'ORIGINAL' })).toBe('COMPRA INSUMO #25');
+    expect(tituloArchivo({ numero: 'PAGO_PROVEEDOR #25', nombre_archivo: 'x.pdf', version: 'ORIGINAL' })).toBe('PAGO PROVEEDOR #25');
     expect(tituloArchivo({ numero: 'VENTA #7', nombre_archivo: 'x.pdf', version: 'ANULADO' })).toBe('VENTA #7 · anulación');
     expect(tituloArchivo({ numero: null, nombre_archivo: 'Contrato 2026.pdf', version: 'ORIGINAL' })).toBe('Contrato 2026.pdf');
   });
 
   it('etiquetas de tipo', () => {
     expect(etiquetaTipoArchivo('ARCHIVO')).toBe('Archivo subido');
-    expect(etiquetaTipoArchivo('PAGO_LECHERO')).toBe('Pago a lecheros');
+    expect(etiquetaTipoArchivo('PAGO_PROVEEDOR')).toBe('Pago a proveedor');
+    expect(etiquetaTipoArchivo('COMPRA')).toBe('Compra');
   });
 });
 

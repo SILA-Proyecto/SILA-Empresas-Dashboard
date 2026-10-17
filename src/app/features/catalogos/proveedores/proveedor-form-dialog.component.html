@@ -19,14 +19,6 @@
     <app-form-field etiqueta="Teléfono">
       <input class="sila-input" type="tel" formControlName="telefono" maxlength="20" autocomplete="off" />
     </app-form-field>
-
-    <app-form-field etiqueta="Tipo de proveedor" [ayuda]="proveedor() ? 'El tipo no se puede cambiar.' : ''" [obligatorio]="true">
-      <select class="sila-select" formControlName="tipo_proveedor">
-        @for (tipo of tiposProveedor; track tipo) {
-          <option [value]="tipo">{{ tipo === 'LECHERO' ? 'Lechero' : 'Insumos' }}</option>
-        }
-      </select>
-    </app-form-field>
   </form>
 
   @if (errorGeneral(); as mensaje) {

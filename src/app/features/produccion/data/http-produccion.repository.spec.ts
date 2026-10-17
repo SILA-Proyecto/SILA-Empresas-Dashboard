@@ -29,7 +29,7 @@ describe('HttpProduccionRepository', () => {
   });
 
   it('crearLote: POST /produccion/lotes con el cuerpo y la cabecera Idempotency-Key', () => {
-    const cuerpo = { id_producto: 3, litros_leche_usados: 50, cantidad_obtenida: 40, costo_por_litro: 0, fecha_produccion: '2026-10-09' };
+    const cuerpo = { id_producto: 3, litros_leche_usados: 50, cantidad_obtenida: 40, fecha_produccion: '2026-10-09' };
     repo.crearLote(cuerpo, 'clave-de-prueba-2').subscribe();
 
     const req = http.expectOne((r) => ruta(r.url) === '/api/v1/produccion/lotes');

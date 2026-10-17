@@ -125,7 +125,7 @@ describe('Recetas', () => {
     campo('precio_base').dispatchEvent(new Event('input'));
     campo('tarifa_iva').value = '19';
     campo('tarifa_iva').dispatchEvent(new Event('input'));
-    Array.from(raiz(f).querySelectorAll('button')).find((b) => b.textContent?.includes('Agregar insumo'))!.click();
+    Array.from(raiz(f).querySelectorAll('button')).find((b) => b.textContent?.includes('Agregar materia prima') || b.textContent?.includes('Agregar insumo'))!.click();
     await estabilizar(f);
     const select = raiz(f).querySelector<HTMLSelectElement>('[data-fila-receta] select')!;
     select.value = '1';

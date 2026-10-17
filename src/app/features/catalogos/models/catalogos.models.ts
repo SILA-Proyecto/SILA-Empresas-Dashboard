@@ -6,11 +6,9 @@ import type { PageQuery } from '../../../core/api/page.models';
  */
 
 export type TipoDocumento = 'CC' | 'NIT' | 'CE' | 'PASAPORTE' | 'TI';
-export type TipoProveedor = 'LECHERO' | 'INSUMOS';
 export type UnidadMedida = 'KG' | 'GR' | 'LT' | 'ML' | 'UND' | 'PAQ';
 
 export const TIPOS_DOCUMENTO: readonly TipoDocumento[] = ['CC', 'NIT', 'CE', 'PASAPORTE', 'TI'];
-export const TIPOS_PROVEEDOR: readonly TipoProveedor[] = ['LECHERO', 'INSUMOS'];
 export const UNIDADES_MEDIDA: readonly UnidadMedida[] = ['KG', 'GR', 'LT', 'ML', 'UND', 'PAQ'];
 
 /** Tri-state filter used by the three tabs. */
@@ -56,13 +54,12 @@ export interface ClientesQuery extends PageQuery {
 // ---------- Proveedores ----------
 
 export interface Proveedor {
-  // SUPUESTO: id_proveedor y `activo` (Recepción de leche solo lista proveedores LECHERO activos).
+  // SUPUESTO: id_proveedor y `activo` (Recepción de leche solo lista proveedores activos).
   id_proveedor: number;
   tipo_documento: TipoDocumento;
   numero_documento: string;
   nombre: string;
   telefono: string;
-  tipo_proveedor: TipoProveedor;
   activo: boolean;
 }
 
@@ -71,12 +68,10 @@ export interface ProveedorGuardar {
   numero_documento: string;
   nombre: string;
   telefono: string;
-  tipo_proveedor: TipoProveedor;
 }
 
 export interface ProveedoresQuery extends PageQuery {
   texto?: string;
-  tipo_proveedor?: TipoProveedor;
   activo?: boolean;
 }
 

@@ -25,21 +25,21 @@ describe('comprobantes.format', () => {
   });
 
   it('etiquetas: tipos y métodos (VARIOS y null incluidos)', () => {
-    expect(etiquetaTipoComprobante('PAGO_LECHERO')).toBe('Pago a lecheros');
-    expect(etiquetaTipoComprobante('COMPRA_INSUMO')).toBe('Compra de insumos');
+    expect(etiquetaTipoComprobante('PAGO_PROVEEDOR')).toBe('Pago a proveedor');
+    expect(etiquetaTipoComprobante('COMPRA')).toBe('Compra');
     expect(etiquetaMetodoComprobante('VARIOS')).toBe('Varios medios');
     expect(etiquetaMetodoComprobante(null)).toBe('—');
     expect(etiquetaMetodoComprobante('EFECTIVO')).toBe('Efectivo');
   });
 
   it('el número del servidor se muestra sin guion bajo', () => {
-    expect(numeroLegible('COMPRA_INSUMO #25')).toBe('COMPRA INSUMO #25');
+    expect(numeroLegible('PAGO_PROVEEDOR #25')).toBe('PAGO PROVEEDOR #25');
     expect(numeroLegible('VENTA #123')).toBe('VENTA #123');
   });
 
   it('la clave del documento (?ver=) va y vuelve, y rechaza lo inválido', () => {
-    expect(claveDocumento('PAGO_LECHERO', 9)).toBe('PAGO_LECHERO-9');
-    expect(leerDocumento('PAGO_LECHERO-9')).toEqual({ tipo: 'PAGO_LECHERO', id: 9 });
+    expect(claveDocumento('PAGO_PROVEEDOR', 9)).toBe('PAGO_PROVEEDOR-9');
+    expect(leerDocumento('PAGO_PROVEEDOR-9')).toEqual({ tipo: 'PAGO_PROVEEDOR', id: 9 });
     expect(leerDocumento('FACTURA-3')).toBeNull();
     expect(leerDocumento('VENTA-0')).toBeNull();
     expect(leerDocumento('VENTA-abc')).toBeNull();

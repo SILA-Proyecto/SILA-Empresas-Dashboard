@@ -1,4 +1,4 @@
-export type TipoComprobante = 'VENTA' | 'ABONO' | 'PAGO_LECHERO' | 'COMPRA_INSUMO' | 'GASTO';
+export type TipoComprobante = 'VENTA' | 'ABONO' | 'PAGO_PROVEEDOR' | 'COMPRA' | 'GASTO';
 export type SentidoComprobante = 'INGRESO' | 'EGRESO';
 export type EstadoComprobante = 'VIGENTE' | 'ANULADO';
 

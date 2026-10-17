@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { HttpAcopioRepository } from '../../features/acopio/data/http-acopio.repository';
 import { HttpCarteraRepository } from '../../features/cartera/data/http-cartera.repository';
+import { HttpCuentasProveedoresRepository } from '../../features/cuentas-proveedores/data/http-cuentas-proveedores.repository';
 import { HttpDocumentosRepository } from '../../features/documentos/data/http-documentos.repository';
 import { HttpGastosRepository } from '../../features/gastos/data/http-gastos.repository';
 import { HttpInsumosRepository } from '../../features/insumos/data/http-insumos.repository';
@@ -24,11 +24,10 @@ describe('Repositorios · toda escritura lleva la Idempotency-Key del intento', 
 
   const K = 'clave-del-intento-01';
   const casos: [string, () => unknown, string][] = [
-    ['acopio.crearRecepcion', () => TestBed.inject(HttpAcopioRepository).crearRecepcion({ id_proveedor: 1, litros: 1, temperatura: 1, acidez: 1 }, K), '/acopio/recepciones'],
-    ['acopio.fijarPrecio', () => TestBed.inject(HttpAcopioRepository).fijarPrecio({ id_proveedor: 1, precio_litro: 1900 }, K), '/acopio/precios'],
-    ['acopio.registrarPago', () => TestBed.inject(HttpAcopioRepository).registrarPago({ id_proveedor: 1, id_periodo_liquidado: 1, monto: 1, metodo_pago: 'EFECTIVO' }, K), '/acopio/pagos'],
-    ['acopio.anularPago', () => TestBed.inject(HttpAcopioRepository).anularPago(1, 'motivo largo', K), '/acopio/pagos/1/anular'],
-    ['produccion.crearLote', () => TestBed.inject(HttpProduccionRepository).crearLote({ id_producto: 1, litros_leche_usados: 1, cantidad_obtenida: 1, costo_por_litro: 0 }, K), '/produccion/lotes'],
+    ['cuentasProveedores.fijarPrecio', () => TestBed.inject(HttpCuentasProveedoresRepository).fijarPrecio({ id_proveedor: 1, id_insumo: 1, precio_unitario: 1900 }, K), '/cuentas-proveedores/precios'],
+    ['cuentasProveedores.registrarPago', () => TestBed.inject(HttpCuentasProveedoresRepository).registrarPago({ id_proveedor: 1, id_periodo_liquidado: 1, monto: 1, metodo_pago: 'EFECTIVO' }, K), '/cuentas-proveedores/pagos'],
+    ['cuentasProveedores.anularPago', () => TestBed.inject(HttpCuentasProveedoresRepository).anularPago(1, 'motivo largo', K), '/cuentas-proveedores/pagos/1/anular'],
+    ['produccion.crearLote', () => TestBed.inject(HttpProduccionRepository).crearLote({ id_producto: 1, litros_leche_usados: 1, cantidad_obtenida: 1 }, K), '/produccion/lotes'],
     ['produccion.crearAjuste', () => TestBed.inject(HttpProduccionRepository).crearAjuste({ id_producto: 1, tipo_ajuste: 'MERMA', cantidad: 1, observacion: 'observación' }, K), '/produccion/ajustes'],
     ['ventas.crear', () => TestBed.inject(HttpVentasRepository).crear({ id_cliente: 1, tipo_venta: 'CREDITO', lineas: [{ id_producto: 1, cantidad: 1 }] }, K), '/ventas'],
     ['ventas.anular', () => TestBed.inject(HttpVentasRepository).anular(1, 'motivo largo', K), '/ventas/1/anular'],

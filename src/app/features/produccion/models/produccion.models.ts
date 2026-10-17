@@ -17,6 +17,9 @@ export interface Lote {
   costo_leche: number;
   costo_insumos: number;
   costo_unitario: number;
+  costo_por_litro?: number;
+  litros_esperados?: number | null;
+  diferencia_litros?: number | null;
   fecha_vencimiento: string;
   dias_restantes: number;
   /** Only when 7 days or fewer remain. */
@@ -37,7 +40,6 @@ export interface NuevoLote {
   id_producto: number;
   litros_leche_usados: number;
   cantidad_obtenida: number;
-  costo_por_litro: number;
   fecha_produccion?: string;
   fecha_vencimiento?: string;
 }

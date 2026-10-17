@@ -2,7 +2,7 @@ import type { PageQuery } from '../../../core/api/page.models';
 
 /** Where a file comes from: made by the system (a voucher PDF) or uploaded by an ADMIN. */
 export type OrigenArchivo = 'COMPROBANTE' | 'ADMIN';
-export type TipoEntidadArchivo = 'VENTA' | 'ABONO' | 'PAGO_LECHERO' | 'COMPRA_INSUMO' | 'GASTO' | 'ARCHIVO';
+export type TipoEntidadArchivo = 'VENTA' | 'ABONO' | 'PAGO_PROVEEDOR' | 'COMPRA' | 'GASTO' | 'ARCHIVO';
 export type VersionArchivo = 'ORIGINAL' | 'ANULADO';
 /** State of the encrypted backup copy in Google Drive. */
 export type EstadoDrive = 'PENDIENTE' | 'SUBIDO' | 'ERROR';

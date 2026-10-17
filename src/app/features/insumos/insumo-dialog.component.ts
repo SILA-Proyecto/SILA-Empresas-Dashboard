@@ -16,7 +16,7 @@ import { Insumo, UNIDADES_INSUMO, UnidadInsumo } from './models/insumos.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
   template: `
-    <app-dialog [open]="abierto()" [title]="insumo() ? 'Editar insumo' : 'Nuevo insumo'" [description]="insumo() ? insumo()!.codigo : 'Nace con stock 0 y costo 0: el stock entra con una compra.'" [cerrable]="!guardando()" (closed)="cerrar.emit()">
+    <app-dialog [open]="abierto()" [title]="insumo() ? 'Editar materia prima' : 'Nueva materia prima'" [description]="insumo() ? insumo()!.codigo : 'Nace con stock 0 y costo 0: el stock entra con una compra.'" [cerrable]="!guardando()" (closed)="cerrar.emit()">
       <form id="insumo-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate class="space-y-4">
         @if (errorGeneral(); as mensaje) {
           <p role="alert" class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">{{ mensaje }}</p>
@@ -30,7 +30,7 @@ import { Insumo, UNIDADES_INSUMO, UnidadInsumo } from './models/insumos.models';
           <input class="sila-input" formControlName="nombre" maxlength="100" autocomplete="off" />
         </app-form-field>
         <div class="grid gap-4 sm:grid-cols-2">
-          <app-form-field etiqueta="Unidad de medida" [obligatorio]="true">
+          <app-form-field etiqueta="Unidad de medida" [ayuda]="(insumo()?.requiere_calidad || insumo()?.codigo === 'LECHE') ? 'La unidad de la leche no se puede cambiar.' : ''" [obligatorio]="true">
             <select class="sila-select" formControlName="unidad_medida">
               @for (u of unidades; track u) {
                 <option [value]="u">{{ u }}</option>
@@ -79,6 +79,11 @@ export class InsumoDialogComponent {
       this.form.reset({ codigo: i?.codigo ?? '', nombre: i?.nombre ?? '', unidad_medida: i?.unidad_medida ?? 'KG', stock_minimo: i?.stock_minimo ?? 0 });
       if (i) this.form.controls.codigo.disable();
       else this.form.controls.codigo.enable();
+      if (i?.requiere_calidad || i?.codigo === 'LECHE') {
+        this.form.controls.unidad_medida.disable();
+      } else {
+        this.form.controls.unidad_medida.enable();
+      }
       this.errorGeneral.set(null);
       this.guardando.set(false);
     });

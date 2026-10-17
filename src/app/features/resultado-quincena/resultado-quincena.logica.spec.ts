@@ -30,7 +30,7 @@ describe('cascadas', () => {
   it('la leche comprada NO entra en ninguna de las dos cascadas', () => {
     const claves = [...cascadaResultado(OCTUBRE_1).lineas, ...cascadaCaja(OCTUBRE_1).lineas].map((l) => l.clave);
     expect(claves).not.toContain('leche_comprada');
-    expect(claves).not.toContain('leche_por_pagar');
+    expect(claves).not.toContain('leche_pagada');
   });
 
   it('un resultado negativo: las líneas siguen sumando al total negativo', () => {
@@ -93,7 +93,7 @@ describe('totales del año y quincenas futuras', () => {
   const HOY = '2026-10-14';
 
   it('suman SOLO las quincenas que ya empezaron', () => {
-    const año = AÑO.map((p) => (p.id_periodo === 19 ? OCTUBRE_1 : p.id_periodo === 18 ? periodoDe(18, { ingresos_ventas: 100000, resultado_estimado: 100000, caja_neta: -5000, leche_por_pagar: 10, cartera_pendiente: 20 }) : p));
+    const año = AÑO.map((p) => (p.id_periodo === 19 ? OCTUBRE_1 : p.id_periodo === 18 ? periodoDe(18, { ingresos_ventas: 100000, resultado_estimado: 100000, caja_neta: -5000, por_pagar_proveedores: 10, cartera_pendiente: 20 }) : p));
     // Una quincena FUTURA con una cifra rara no debe entrar.
     año[22] = periodoDe(23, { resultado_estimado: 777 });
     const t = totalesAnio(año, HOY);
@@ -102,7 +102,7 @@ describe('totales del año y quincenas futuras', () => {
     expect(t.ingresos_ventas).toBe(1000000);
     expect(t.resultado_estimado).toBe(630000);
     expect(t.caja_neta).toBe(405000);
-    expect(t.leche_por_pagar).toBe(250010);
+    expect(t.por_pagar_proveedores).toBe(250010);
     expect(t.cartera_pendiente).toBe(371020);
   });
 

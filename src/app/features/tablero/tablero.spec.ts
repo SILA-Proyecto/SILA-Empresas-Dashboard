@@ -16,7 +16,7 @@ import { VentasSemanaChartComponent } from './ventas-semana-chart.component';
 
 const SEMANA = Array.from({ length: 7 }, (_, i) => ({ fecha: `2026-10-${String(8 + i).padStart(2, '0')}`, total: i === 2 ? 0 : 50000 * (i + 1), cantidad: i === 2 ? 0 : i + 1 }));
 const ALERTA = (n: number, severidad: 'CRITICA' | 'ADVERTENCIA') => ({ clave: `K${n}`, tipo: 'INSUMO_AGOTADO', severidad, titulo: `Alerta ${n}`, detalle: `Detalle ${n}`, entidad: 'INSUMO', id_entidad: n, fecha: null });
-const QUINCENA = { id_periodo: 19, anio: 2026, mes: 10, quincena: 1, fecha_inicio: '2026-10-01', fecha_fin: '2026-10-15', estado: 'ABIERTA' as const, ingresos_ventas: 900000, total_vendido: 1000000, total_cobrado: 800000, costo_produccion: 100000, gastos_operativos: 50000, cartera_castigada: 0, resultado_estimado: 750000, caja_neta: 120000, leche_litros: 1500, leche_por_pagar: 450000 };
+const QUINCENA = { id_periodo: 19, anio: 2026, mes: 10, quincena: 1, fecha_inicio: '2026-10-01', fecha_fin: '2026-10-15', estado: 'ABIERTA' as const, ingresos_ventas: 900000, total_vendido: 1000000, total_cobrado: 800000, costo_produccion: 100000, gastos_operativos: 50000, cartera_castigada: 0, resultado_estimado: 750000, caja_neta: 120000, leche_litros: 1500, por_pagar_proveedores: 450000 };
 
 const TABLERO: Tablero = {
   fecha: '2026-10-14',
@@ -24,7 +24,7 @@ const TABLERO: Tablero = {
   quincena: QUINCENA,
   cartera: { saldo_total: 2500000, saldo_vencido: 800000, clientes_con_saldo: 7, clientes_en_mora: 2 },
   inventario: { valor_productos: 5000000, productos_bajo_minimo: 1, productos_agotados: 0, valor_insumos: 1200000, insumos_bajo_minimo: 3, lotes_por_vencer: 2 },
-  lecheros: { saldo_por_pagar: 900000, proveedores_con_saldo: 4 },
+  proveedores: { saldo_por_pagar: 900000, proveedores_con_saldo: 4 },
   alertas: { total: 8, criticas: 2, principales: [ALERTA(1, 'CRITICA'), ALERTA(2, 'CRITICA'), ALERTA(3, 'ADVERTENCIA')] },
   ventas_semana: SEMANA,
 };
@@ -125,7 +125,7 @@ describe('Tablero', () => {
       expect(sec).toContain('Caja neta');
       expect(sec).toContain('Vendido / cobrado');
       expect(sec).toContain('Cobrado $ 800.000');
-      expect(sec).toContain('Leche por pagar');
+      expect(sec).toContain('Proveedores por pagar');
       expect(sec).toContain('$ 450.000');
     });
 
@@ -135,7 +135,7 @@ describe('Tablero', () => {
       expect(el.querySelector('[data-testid=tarjeta-resultado] [data-testid=valor-tarjeta]')!.classList.contains('text-destructive')).toBe(true);
     });
 
-    it('cartera, inventario y lecheros muestran sus cifras y enlazan a su módulo', async () => {
+    it('cartera, inventario y proveedores muestran sus cifras y enlazan a su módulo', async () => {
       const { el, q } = await pagina();
       const enlaces = Array.from(el.querySelectorAll<HTMLAnchorElement>('[data-testid=enlace-bloque]')).map((a) => a.getAttribute('href'));
 
@@ -149,8 +149,8 @@ describe('Tablero', () => {
       expect(valorDe(el, 'Insumos bajo mínimo')).toBe('3');
       expect(valorDe(el, 'Lotes por vencer (7 días)')).toBe('2');
       expect(valorDe(el, 'Proveedores con saldo')).toBe('4');
-      expect(q('[data-testid=lecheros-saldo]')).toBe('$ 900.000');
-      expect(enlaces).toEqual(['/cartera', '/inventario', '/insumos', '/acopio?pestana=lecheros']);
+      expect(q('[data-testid=proveedores-saldo]')).toBe('$ 900.000');
+      expect(enlaces).toEqual(['/cartera', '/inventario', '/insumos', '/cuentas-proveedores']);
     });
 
     it('la gráfica trae las 7 filas (la de 0 también) en su tabla de texto', async () => {
@@ -219,14 +219,14 @@ describe('Tablero', () => {
   describe('ADMIN y OPERATIVO ven lo mismo', () => {
     it('las cifras visibles son idénticas para los dos roles', async () => {
       const a = await pagina('ADMIN');
-      const textoAdmin = limpio(a.el.querySelector('[aria-labelledby=tb-hoy]')?.textContent) + limpio(a.el.querySelector('[aria-label="Cartera, inventario y lecheros"]')?.textContent);
+      const textoAdmin = limpio(a.el.querySelector('[aria-labelledby=tb-hoy]')?.textContent) + limpio(a.el.querySelector('[aria-label="Cartera, inventario y proveedores"]')?.textContent);
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: TABLERO_REPOSITORY, useValue: repo }, { provide: NOTIFICACIONES_REPOSITORY, useValue: { listar: vi.fn(() => of({ total: 0, criticas: 0, items: [] })) } }],
       });
       sinApex();
       const o = await pagina('OPERATIVO');
-      const textoOp = limpio(o.el.querySelector('[aria-labelledby=tb-hoy]')?.textContent) + limpio(o.el.querySelector('[aria-label="Cartera, inventario y lecheros"]')?.textContent);
+      const textoOp = limpio(o.el.querySelector('[aria-labelledby=tb-hoy]')?.textContent) + limpio(o.el.querySelector('[aria-label="Cartera, inventario y proveedores"]')?.textContent);
 
       expect(textoOp).toBe(textoAdmin);
     });

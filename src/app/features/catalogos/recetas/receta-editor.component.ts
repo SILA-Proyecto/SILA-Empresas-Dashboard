@@ -75,9 +75,13 @@ export function validarReceta(filas: readonly LineaEdicion[]): ResultadoReceta {
       @if (error(); as mensaje) {
         <p class="text-xs font-medium text-destructive" role="alert" data-testid="error-receta">{{ mensaje }}</p>
       }
+      <p class="text-xs text-muted-foreground">
+        La leche en la receta es la <strong>referencia de rendimiento</strong> esperada por unidad: el lote consumirá los litros reales que digite el operario.
+      </p>
+
       <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="agregar()">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
-        Agregar insumo
+        Agregar materia prima
       </button>
     </fieldset>
   `,

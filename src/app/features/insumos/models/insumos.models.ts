@@ -14,6 +14,8 @@ export interface Insumo {
   bajo_minimo: boolean;
   productos_que_lo_usan: number;
   activo: boolean;
+  /** Solo la LECHE lo tiene en true: exige temperatura y acidez al comprar; no se puede desactivar ni cambiar de unidad. */
+  requiere_calidad?: boolean;
 }
 
 export interface InsumosQuery {
@@ -37,6 +39,7 @@ export interface ResumenInsumos {
 }
 
 export type EstadoCompra = 'VIGENTE' | 'ANULADA';
+export type EstadoCalidadCompra = 'APROBADO' | 'RECHAZADO';
 
 export interface Compra {
   id_compra: number;
@@ -50,7 +53,7 @@ export interface Compra {
   /** `AAAA-MM-DD`. */
   fecha: string;
   cantidad: number;
-  /** What the invoice says; the unit cost is computed from it. */
+  /** What the invoice says; the unit cost is computed from it. 0 if rejected. */
   valor_total: number;
   costo_unitario: number;
   referencia: string | null;
@@ -59,12 +62,22 @@ export interface Compra {
   usuario_registro: string;
   /** UTC, no zone. */
   fecha_registro: string;
+  contado: boolean;
+  comprado_en: string | null;
+  estado_calidad?: EstadoCalidadCompra | null;
+  temperatura?: number | null;
+  acidez?: number | null;
+  motivo_rechazo?: string | null;
+  requiere_calidad?: boolean;
 }
 
 export interface ComprasQuery {
   id_insumo?: number;
   id_proveedor?: number;
   estado?: EstadoCompra;
+  estado_calidad?: EstadoCalidadCompra;
+  id_periodo?: number;
+  contado?: boolean;
   desde?: string;
   hasta?: string;
 }
@@ -73,9 +86,13 @@ export interface NuevaCompra {
   id_insumo: number;
   id_proveedor?: number;
   cantidad: number;
-  valor_total: number;
+  valor_total?: number;
   referencia?: string;
   fecha?: string;
+  contado?: boolean;
+  comprado_en?: string;
+  temperatura?: number;
+  acidez?: number;
 }
 
 export type TipoAjusteInsumo = 'MERMA' | 'DANO' | 'VENCIMIENTO' | 'CORRECCION_MAS' | 'CORRECCION_MENOS';

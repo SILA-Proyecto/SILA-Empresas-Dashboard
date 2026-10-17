@@ -24,7 +24,7 @@ export interface Periodo {
   /** Computed by the database: ingresos - costo - gastos - cartera castigada. Management estimate, not accounting. */
   resultado_estimado: number;
 
-  // ---- Quincena accounts (see «Cuentas con los lecheros y cuentas de la quincena» of the contract) ----
+  // ---- Quincena accounts (see «Cuentas de la quincena» of the contract) ----
   /** IVA of the (non-annulled) sales. `ingresos_ventas` is WITHOUT IVA. */
   iva_ventas: number;
   /** Total sold WITH IVA. */
@@ -40,13 +40,17 @@ export interface Periodo {
   leche_litros: number;
   leche_litros_rechazados: number;
   leche_comprada: number;
-  leche_pagada: number;
-  leche_por_pagar: number;
-  /** Payments to lecheros made DURING the quincena (of any milk quincena). */
+  /** Everything bought and approved in the quincena = compras_contado + compras_credito. */
+  compras_materias_primas: number;
+  compras_contado: number;
+  compras_credito: number;
+  /** Paid for THIS quincena's credit purchases, even if paid later. */
+  pagado_proveedores: number;
+  /** compras_credito − pagado_proveedores. */
+  por_pagar_proveedores: number;
+  /** Payments to providers made DURING the quincena (from cash). */
   pagos_proveedores_caja: number;
-  /** Valid purchases of insumos made in the quincena (assumed paid when bought). */
-  compras_insumos: number;
-  /** total_cobrado − pagos_proveedores_caja − compras_insumos − gastos_operativos. */
+  /** total_cobrado − pagos_proveedores_caja − gastos_operativos − compras_contado. */
   caja_neta: number;
 }
 

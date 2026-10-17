@@ -84,7 +84,7 @@ describe('Lote con receta', () => {
     const f = await crearDialogo();
     produccion.crearLote.mockReturnValue(throwError(() => ({ code: 20002, message: 'Falta Azúcar: se necesitan 50 y hay 9.' })));
     await cantidad(f, '100');
-    for (const [n, v] of [['litros_leche_usados', '10'], ['costo_por_litro', '0']]) {
+    for (const [n, v] of [['litros_leche_usados', '10']]) {
       const el = raiz(f).querySelector<HTMLInputElement>(`[formcontrolname=${n}]`)!;
       el.value = v;
       el.dispatchEvent(new Event('input'));
@@ -94,8 +94,46 @@ describe('Lote con receta', () => {
     await estabilizar(f);
 
     expect(produccion.crearLote).toHaveBeenCalledTimes(1);
+    expect(produccion.crearLote.mock.calls[0][0]).not.toHaveProperty('costo_por_litro');
     expect(texto(f, '[role=alert]')).toContain('Falta Azúcar: se necesitan 50 y hay 9.');
     expect(texto(f, '[role=alert]')).not.toContain('Stock insuficiente');
+  });
+
+  it('un producto con leche en la receta sugiere los litros esperados y avisa si difiere > 10 %', async () => {
+    const recetaConLeche: Receta = {
+      ...RECETA,
+      lineas: [
+        { id_insumo: 10, codigo_insumo: 'LECHE', insumo: 'Leche cruda', unidad_insumo: 'LT', cantidad_por_unidad: 2.5, costo_unitario_insumo: 2000, valor_por_unidad: 5000, stock_insumo: 500, insumo_activo: true },
+      ],
+    };
+    const f = await crearDialogo(recetaConLeche);
+    await cantidad(f, '20'); // 20 * 2.5 = 50 L esperados
+
+    // Litros esperados sugeridos
+    expect(texto(f, '#lote-form')).toContain('Esperado según receta: 50 L');
+
+    // Cambiar litros reales a 70 L (diferencia de +20 L, 40 % > 10 %)
+    const el = raiz(f).querySelector<HTMLInputElement>('[formcontrolname=litros_leche_usados]')!;
+    el.value = '70';
+    el.dispatchEvent(new Event('input'));
+    await estabilizar(f);
+
+    expect(texto(f, '[data-testid=diferencia-leche]')).toContain('Esperado 50 L');
+    expect(texto(f, '[data-testid=diferencia-leche]')).toContain('Usado 70 L');
+    expect(texto(f, '[data-testid=diferencia-leche]')).toContain('Dif: +20 L');
+    expect(texto(f, '[data-testid=diferencia-leche]')).toContain('difiere más de 10 %');
+  });
+
+  it('una materia prima con «leche» en el nombre pero otro código no se toma por la leche cruda', async () => {
+    const recetaConPolvo: Receta = {
+      ...RECETA,
+      lineas: [{ id_insumo: 11, codigo_insumo: 'LECHE-POLVO', insumo: 'Leche en polvo', unidad_insumo: 'KG', cantidad_por_unidad: 0.1, costo_unitario_insumo: 20000, valor_por_unidad: 2000, stock_insumo: 1, insumo_activo: true }],
+    };
+    const f = await crearDialogo(recetaConPolvo);
+    await cantidad(f, '20');
+
+    expect(texto(f, '#lote-form')).not.toContain('Esperado según receta');
+    expect(texto(f, '[data-testid=insumos-lote]')).toContain('Leche en polvo');
   });
 
   it('un producto sin receta lo dice y no muestra insumos', async () => {
