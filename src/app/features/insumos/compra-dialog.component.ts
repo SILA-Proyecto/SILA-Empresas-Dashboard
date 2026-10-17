@@ -112,10 +112,16 @@ function mayorQueCero(control: AbstractControl): ValidationErrors | null {
             <input class="sila-input" type="number" inputmode="decimal" min="0" step="any" formControlName="cantidad" />
           </app-form-field>
 
-          <!-- Valor total de la factura (opcional) -->
-          <app-form-field etiqueta="Valor total (COP)" [ayuda]="ayudaValorTotal()">
-            <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="valor_total" placeholder="Dejar vacío para usar precio pactado" />
-          </app-form-field>
+          <!-- Valor total de la factura (opcional). El OPERATIVO no fija el valor de la leche: lo decide el precio pactado o el del sistema. -->
+          @if (puedeFijarValor()) {
+            <app-form-field etiqueta="Valor total (COP)" [ayuda]="ayudaValorTotal()">
+              <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="valor_total" placeholder="Dejar vacío para usar precio pactado" />
+            </app-form-field>
+          } @else {
+            <p class="self-end rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground" data-testid="valor-lo-fija-el-sistema">
+              El valor de la leche lo fija el precio pactado con el proveedor o, si no hay, el precio por defecto del sistema. Tú solo registras los litros.
+            </p>
+          }
 
           <!-- Modalidad de pago: Contado vs Crédito -->
           <div class="sm:col-span-2 flex items-center justify-between rounded-md border border-border p-3">
@@ -191,6 +197,8 @@ export class CompraDialogComponent {
   );
   protected readonly seleccionado = computed(() => this.insumos().find((i) => i.id_insumo === this.insumo()) ?? null);
   protected readonly esLeche = computed(() => !!(this.seleccionado()?.requiere_calidad || this.seleccionado()?.codigo === 'LECHE'));
+  /** The ADMIN can type the invoice total; the OPERATIVO cannot for milk (the server rejects it). */
+  protected readonly puedeFijarValor = computed(() => this.esAdmin() || !this.esLeche());
   protected readonly errorInsumo = computed(() => (this.insumoTocado() && this.insumo() === null ? 'Elige la materia prima.' : null));
   protected readonly errorProveedor = computed(() => (this.insumoTocado() && this.esLeche() && this.proveedor() === null ? 'El proveedor es obligatorio para la leche.' : null));
 
@@ -249,7 +257,7 @@ export class CompraDialogComponent {
   protected readonly costoUnitario = computed<number | null>(() => {
     const v = this.valores();
     const cantidad = Number(v.cantidad);
-    const total = v.valor_total != null && v.valor_total !== ('' as unknown as number) ? Number(v.valor_total) : null;
+    const total = this.puedeFijarValor() && v.valor_total != null && v.valor_total !== ('' as unknown as number) ? Number(v.valor_total) : null;
     if (cantidad > 0 && total != null && total > 0) {
       return Math.round((total / cantidad) * 100) / 100;
     }
@@ -338,7 +346,7 @@ export class CompraDialogComponent {
     const v = this.form.getRawValue();
     const referencia = v.referencia.trim();
     const compradoEn = v.comprado_en.trim();
-    const valorTotal = v.valor_total != null && v.valor_total !== ('' as unknown as number) && Number(v.valor_total) > 0 ? Number(v.valor_total) : undefined;
+    const valorTotal = this.puedeFijarValor() && v.valor_total != null && v.valor_total !== ('' as unknown as number) && Number(v.valor_total) > 0 ? Number(v.valor_total) : undefined;
 
     const cuerpo: NuevaCompra = {
       id_insumo: insumo,

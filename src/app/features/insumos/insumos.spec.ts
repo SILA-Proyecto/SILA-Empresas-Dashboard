@@ -223,6 +223,42 @@ describe('Insumos', () => {
       });
     });
 
+    it('el OPERATIVO no ve «Valor total» en la leche: solo registra litros y el sistema fija el valor', async () => {
+      TestBed.inject(AuthService).sesion.set({ id_usuario: 2, usuario: 'ana.operario', nombre: 'Ana', email: 'ana@example.com', rol: 'OPERATIVO', mfa_activo: true });
+
+      const f = await crear([LECHE]);
+      await elegirInsumo(f, 'compra-insumo');
+      await elegirInsumo(f, 'compra-proveedor');
+      escribir(f, '[formcontrolname=cantidad]', '100');
+      escribir(f, '[formcontrolname=temperatura]', '7.5');
+      escribir(f, '[formcontrolname=acidez]', '16');
+      await estabilizar(f);
+
+      expect(raiz(f).querySelector('[formcontrolname=valor_total]')).toBeNull();
+      expect(raiz(f).querySelector('[data-testid=valor-lo-fija-el-sistema]')?.textContent).toContain('precio pactado');
+      raiz(f).querySelector('#compra-form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+      const [cuerpo] = repo['crearCompra'].mock.calls[0];
+      expect('valor_total' in cuerpo).toBe(false);
+    });
+
+    it('el ADMIN sí puede fijar el valor total de una compra de leche', async () => {
+      const f = await crear([LECHE]);
+      await elegirInsumo(f, 'compra-insumo');
+      await elegirInsumo(f, 'compra-proveedor');
+      escribir(f, '[formcontrolname=cantidad]', '100');
+      escribir(f, '[formcontrolname=temperatura]', '7.5');
+      escribir(f, '[formcontrolname=acidez]', '16');
+      escribir(f, '[formcontrolname=valor_total]', '250000');
+      await estabilizar(f);
+
+      raiz(f).querySelector('#compra-form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+
+      expect(raiz(f).querySelector('[data-testid=valor-lo-fija-el-sistema]')).toBeNull();
+      expect(repo['crearCompra'].mock.calls[0][0]).toMatchObject({ valor_total: 250000 });
+    });
+
     it('avisa en pantalla antes de enviar si la temperatura de la leche supera el umbral máximo', async () => {
       const f = await crear([LECHE]);
       await elegirInsumo(f, 'compra-insumo');

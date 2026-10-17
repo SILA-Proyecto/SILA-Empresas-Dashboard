@@ -37,6 +37,8 @@ import { HttpUsuariosRepository } from '../../features/usuarios/data/http-usuari
 import { USUARIOS_REPOSITORY } from '../../features/usuarios/data/usuarios.provider';
 import { HttpReportesRepository } from '../../features/reportes/data/http-reportes.repository';
 import { REPORTES_REPOSITORY } from '../../features/reportes/data/reportes.provider';
+import { ASISTENTE_REPOSITORY } from '../../features/asistente/data/asistente.provider';
+import { HttpAsistenteRepository } from '../../features/asistente/data/http-asistente.repository';
 import { HttpCuentasProveedoresRepository } from '../../features/cuentas-proveedores/data/http-cuentas-proveedores.repository';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from '../../features/cuentas-proveedores/data/cuentas-proveedores.provider';
 
@@ -61,6 +63,7 @@ export function provideDataLayer(): Provider[] {
     { provide: VENTAS_REPOSITORY, useExisting: HttpVentasRepository },
     { provide: PRECIOS_CLIENTE_REPOSITORY, useExisting: HttpPreciosClienteRepository },
     { provide: CARTERA_REPOSITORY, useExisting: HttpCarteraRepository },
+    { provide: ASISTENTE_REPOSITORY, useExisting: HttpAsistenteRepository },
     { provide: REPORTES_REPOSITORY, useExisting: HttpReportesRepository },
     { provide: PARAMETROS_REPOSITORY, useExisting: HttpParametrosRepository },
   ];

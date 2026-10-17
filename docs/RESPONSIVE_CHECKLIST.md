@@ -62,12 +62,15 @@ Se midió con un guion de Playwright que no está en el repo; para repetirlo a m
 | Tablas → tarjetas (Catálogos), orden con «Ordenar por», filtros plegados en «Filtros» | OK |
 | Diálogos como hoja inferior: recepción, lote, ajuste, fijar precio | OK |
 | Punto de venta: barra de total fija al pie, ticket y pago mixto | OK |
+| Asistente (burbuja): a 360, 390 y 430 px el panel ocupa toda la pantalla sin scroll horizontal, botones de 44 px, caja a 16 px, el scroll de la página queda bloqueado mientras está abierto; a 768 y 1280 px es una tarjeta de 24 rem en la esquina | OK |
+| Asistente: en el punto de venta (teléfono) la burbuja sube sobre la barra de total y no tapa «Cobrar» | OK |
 
 ## 3. Pendiente de revisar a mano (no se puede comprobar con emulación)
 
 - [ ] En un teléfono real (Android e iPhone): que el teclado virtual no tape el campo enfocado en los diálogos y en el punto de venta.
 - [ ] Rotación horizontal con el cajón o un diálogo abierto.
 - [ ] Impresión del ticket y del recibo desde el teléfono.
+- [ ] Burbuja del asistente en un teléfono real: que el teclado no tape la caja de texto (el panel usa `100dvh`), que el área segura de iPhone (barra inferior) no la tape y que no se solape con la barra de navegación de Android.
 - [ ] Tablas pequeñas dentro de diálogos que siguen con scroll horizontal propio: detalle de lechero («Cuánto le debo») y «Ventas pendientes» de Cartera.
 - [ ] Pestañas con el indicador de scroll en 360 px (se desplazan a la pestaña elegida, sin degradado en el borde).
 - [ ] Gráficos (Tablero y «Resultado por quincena»): en teléfono real, que deslizar la gráfica del año con el dedo no choque con el scroll de la página, y que el toque en una columna seleccione la quincena (con emulación táctil solo se probó con el puntero).

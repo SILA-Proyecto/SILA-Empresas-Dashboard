@@ -11,7 +11,7 @@ import { nuevaClaveIdempotencia } from './idempotencia';
  * reused only to retry the same data; the key added here is per call (one per `post(...)`, so an HTTP retry of that same
  * call keeps it).
  */
-const ESCRITURA_CON_CLAVE = /^\/?(acopio|produccion|ventas|cartera|documentos|finanzas\/gastos|cuentas-proveedores|insumos\/(compras|ajustes))(\/|$)/;
+const ESCRITURA_CON_CLAVE = /^\/?(acopio|produccion|ventas|cartera|documentos|finanzas\/gastos|cuentas-proveedores|asistente|insumos\/(compras|ajustes))(\/|$)/;
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
 

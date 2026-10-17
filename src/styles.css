@@ -266,3 +266,29 @@ body.sila-sin-scroll {
     break-inside: avoid;
   }
 }
+
+
+/* ------------------------------------------------------------------ */
+/* Help assistant bubble (fixed, bottom end). It keeps clear of the notch and of the bottom bars of the screens. */
+/* ------------------------------------------------------------------ */
+.sila-asistente-boton {
+  inset-inline-end: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Phones: a screen with its own bottom bar (`.sila-barra-inferior`, e.g. the point of sale total + «Cobrar») lifts the bubble above it. */
+@media (max-width: 1023px) {
+  body:has(.sila-barra-inferior) .sila-asistente-boton {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* The panel is the whole screen on phones: no scroll of the page behind it. */
+@media (max-width: 639px) {
+  body.sila-chat-abierto {
+    overflow: hidden;
+  }
+  .sila-asistente-panel {
+    padding-top: env(safe-area-inset-top);
+  }
+}

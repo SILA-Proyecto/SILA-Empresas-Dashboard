@@ -1,5 +1,6 @@
 import { VisorArchivosComponent } from '../../features/archivos/visor-archivos.component';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AsistenteBurbujaComponent } from '../../features/asistente/asistente-burbuja.component';
 import { RouterOutlet } from '@angular/router';
 import { InactividadService } from '../../core/session/inactividad.service';
 import { AvisoInactividadComponent } from './aviso-inactividad.component';
@@ -13,7 +14,7 @@ import { SidebarStateService } from '../services/sidebar-state.service';
   selector: 'app-dashboard-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [VisorArchivosComponent, RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent],
+  imports: [AsistenteBurbujaComponent, VisorArchivosComponent, RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent],
   templateUrl: './dashboard-shell.component.html',
 })
 export class DashboardShellComponent {
