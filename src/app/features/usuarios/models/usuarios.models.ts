@@ -25,19 +25,24 @@ export interface Usuario {
   fecha_creacion: string;
 }
 
-/** `usuario`: 3-100 characters in lowercase, `a-z 0-9 _ . @ -`. `nombre`: 3-120. `email`: up to 150. */
+/**
+ * `usuario`: 3-100 characters in lowercase, `a-z 0-9 _ . @ -`. `nombre`: 3-120. `email`: up to 150.
+ * `codigo`: the second-factor code of the ADMIN doing this (6 digits or a backup code). Never stored or logged.
+ */
 export interface UsuarioCrear {
   usuario: string;
   nombre: string;
   email: string;
   rol: Rol;
+  codigo: string;
 }
 
-/** Changing the role closes that person's sessions. */
+/** Changing the role closes that person's sessions. `codigo`: as in `UsuarioCrear`. */
 export interface UsuarioActualizar {
   nombre: string;
   email: string;
   rol: Rol;
+  codigo: string;
 }
 
 /** Answer of create and reset-password. `clave_temporal` is shown ONCE and never stored. */

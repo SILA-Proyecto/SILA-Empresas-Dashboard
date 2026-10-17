@@ -93,13 +93,13 @@
         class="sila-btn sila-btn-ghost size-8 px-0"
         [disabled]="esYo(usuario)"
         [attr.title]="esYo(usuario) ? motivoPropiaCuenta : usuario.activo ? 'Desactivar' : 'Activar'"
-        (click)="accion.set({ tipo: 'estado', usuario })"
+        (click)="abrirAccion('estado', usuario)"
       >
         <app-icon name="lucidePower" class="size-4" aria-hidden="true" />
         <span class="sr-only">{{ usuario.activo ? 'Desactivar' : 'Activar' }} a {{ usuario.nombre }}</span>
       </button>
       @if (usuario.bloqueado) {
-        <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Desbloquear" (click)="accion.set({ tipo: 'desbloquear', usuario })">
+        <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Desbloquear" (click)="abrirAccion('desbloquear', usuario)">
           <app-icon name="lucideLockOpen" class="size-4" aria-hidden="true" />
           <span class="sr-only">Desbloquear a {{ usuario.nombre }}</span>
         </button>
@@ -108,7 +108,7 @@
         <app-icon name="lucideMonitor" class="size-4" aria-hidden="true" />
         <span class="sr-only">Ver sesiones de {{ usuario.nombre }}</span>
       </button>
-      <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Cerrar sus sesiones" (click)="accion.set({ tipo: 'sesiones', usuario })">
+      <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Cerrar sus sesiones" (click)="abrirAccion('sesiones', usuario)">
         <app-icon name="lucideLogOut" class="size-4" aria-hidden="true" />
         <span class="sr-only">Cerrar las sesiones de {{ usuario.nombre }}</span>
       </button>
@@ -117,7 +117,7 @@
         class="sila-btn sila-btn-ghost size-8 px-0"
         [disabled]="esYo(usuario)"
         [attr.title]="esYo(usuario) ? motivoPropiaCuenta : 'Restablecer clave'"
-        (click)="accion.set({ tipo: 'clave', usuario })"
+        (click)="abrirAccion('clave', usuario)"
       >
         <app-icon name="lucideKeyRound" class="size-4" aria-hidden="true" />
         <span class="sr-only">Restablecer clave de {{ usuario.nombre }}</span>
@@ -128,7 +128,7 @@
           class="sila-btn sila-btn-ghost size-8 px-0"
           [disabled]="esYo(usuario)"
           [attr.title]="esYo(usuario) ? motivoPropiaCuenta : 'Restablecer segundo factor'"
-          (click)="accion.set({ tipo: 'mfa', usuario })"
+          (click)="abrirAccion('mfa', usuario)"
         >
           <app-icon name="lucideShieldOff" class="size-4" aria-hidden="true" />
           <span class="sr-only">Restablecer segundo factor de {{ usuario.nombre }}</span>
@@ -147,13 +147,26 @@
 />
 
 <app-confirm-dialog
-  [open]="accion() !== null"
+  [open]="accion() !== null && !pideCodigo()"
   [titulo]="dialogoAccion().titulo"
   [mensaje]="dialogoAccion().mensaje"
   [textoConfirmar]="dialogoAccion().texto"
   [peligro]="dialogoAccion().peligro"
   [ocupado]="procesando()"
   (confirmar)="confirmarAccion()"
+  (cancelar)="accion.set(null)"
+/>
+
+<app-confirmar-con-codigo-dialog
+  [abierto]="accion() !== null && pideCodigo()"
+  [titulo]="dialogoAccion().titulo"
+  [mensaje]="dialogoAccion().mensaje"
+  [textoConfirmar]="dialogoAccion().texto"
+  [peligro]="dialogoAccion().peligro"
+  [ocupado]="procesando()"
+  [error]="errorAccion()"
+  [errorCodigo]="errorCodigoAccion()"
+  (confirmar)="confirmarAccion($event)"
   (cancelar)="accion.set(null)"
 />
 

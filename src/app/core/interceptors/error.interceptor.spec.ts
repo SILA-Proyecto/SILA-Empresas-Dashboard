@@ -185,6 +185,28 @@ describe('interceptores de autenticación', () => {
     });
   });
 
+  describe('errorInterceptor · código del segundo factor en acciones sensibles', () => {
+    it.each(['Codigo incorrecto.', 'Ese codigo ya fue usado.'])('un 401 / 20013 «%s» NO es un token vencido: no renueva, no cierra la sesión y entrega el error', (mensaje) => {
+      let error: ApiError | undefined;
+      http.post('/api/v1/usuarios', { codigo: '000000' }).subscribe({ error: (e) => (error = e) });
+      llamadas('/api/v1/usuarios')[0].flush({ code: 20013, message: mensaje }, { status: 401, statusText: 'Unauthorized' });
+
+      expect(error).toEqual({ code: 20013, message: mensaje });
+      expect(llamadas('/api/v1/auth/refresh')).toHaveLength(0);
+      expect(auth.isAuthenticated()).toBe(true);
+    });
+
+    it('en la misma ruta, un token vencido de verdad sigue renovándose y reintentándose', () => {
+      http.post('/api/v1/usuarios', { codigo: '123456' }).subscribe();
+      llamadas('/api/v1/usuarios')[0].flush(VENCIDO, { status: 401, statusText: 'Unauthorized' });
+      llamadas('/api/v1/auth/refresh')[0].flush(OK('token-nuevo'));
+
+      const [reintento] = llamadas('/api/v1/usuarios');
+      expect(reintento.request.headers.get('Authorization')).toBe('Bearer token-nuevo');
+      reintento.flush({});
+    });
+  });
+
   describe('errorInterceptor · otros errores', () => {
     it('lee support_ref y fields del cuerpo, y no toca la sesión', () => {
       let error: ApiError | undefined;

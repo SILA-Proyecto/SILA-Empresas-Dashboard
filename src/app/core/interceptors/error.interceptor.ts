@@ -10,10 +10,17 @@ import { AuthService } from '../services/auth.service';
 const NO_AUTENTICADO = 20013;
 
 /**
+ * The API answers a wrong or already used second-factor code (the sensitive actions of `/usuarios`) with the SAME `401` / `20013`
+ * as an expired token, only the text differs («Codigo incorrecto.», «Ese codigo ya fue usado»). That is an answer about the code,
+ * not about the session: renewing and retrying would log the person out for a typing mistake.
+ */
+const FALLO_DE_CODIGO = /c[oó]digo/i;
+
+/**
  * Turns every HTTP failure into the dashboard's `ApiError`, so repositories
  * and components never see `HttpErrorResponse`.
  *
- * 401 / 20013 on a normal call = the access token expired: refresh ONCE and
+ * 401 / 20013 on a normal call = the access token expired (unless it is about a second-factor code): refresh ONCE and
  * retry the call ONCE with the new token. If refreshing fails (or the retry is
  * rejected too) the session is cleared and the user goes to `/login`, keeping
  * the page to come back to, with the notice "Tu sesión se cerró…" (it can be another device, idle
@@ -47,7 +54,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           return throwError(() => fallo);
         }
         const error = aApiError(fallo);
-        const tokenVencido = fallo.status === 401 && error.code === NO_AUTENTICADO && !esRutaAuth(peticion.url);
+        const tokenVencido = fallo.status === 401 && error.code === NO_AUTENTICADO && !esRutaAuth(peticion.url) && !FALLO_DE_CODIGO.test(error.message);
         if (!tokenVencido) {
           return throwError(() => error);
         }

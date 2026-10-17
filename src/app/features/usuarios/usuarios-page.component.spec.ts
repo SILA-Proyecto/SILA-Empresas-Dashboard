@@ -83,6 +83,15 @@ describe('UsuariosPageComponent', () => {
   const raiz = (f: ComponentFixture<unknown>) => f.nativeElement as HTMLElement;
   const fila = (f: ComponentFixture<unknown>, nombre: string) =>
     Array.from(raiz(f).querySelectorAll<HTMLTableRowElement>('tbody tr')).find((tr) => tr.textContent?.includes(nombre))!;
+  const dialogoClave = (f: ComponentFixture<unknown>) =>
+    Array.from(raiz(f).querySelectorAll<HTMLDialogElement>('dialog')).find((d) => d.textContent?.includes('Clave temporal de'))!;
+  /** Types the second-factor code in the dialog that is open. */
+  const escribirCodigo = (f: ComponentFixture<unknown>, codigo: string) => {
+    const campo = raiz(f).querySelector<HTMLInputElement>('dialog[open] input[inputmode=numeric]')!;
+    campo.value = codigo;
+    campo.dispatchEvent(new Event('input'));
+  };
+  const valorCodigo = (f: ComponentFixture<unknown>) => raiz(f).querySelector<HTMLInputElement>('dialog[open] input[inputmode=numeric]')?.value;
   const boton = (contenedor: ParentNode, texto: string) =>
     Array.from(contenedor.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.includes(texto));
 
@@ -147,20 +156,18 @@ describe('UsuariosPageComponent', () => {
       poner('usuario', 'nuevo.usuario');
       poner('nombre', 'Persona Nueva');
       poner('email', 'nuevo@example.com');
+      escribirCodigo(f, '123456');
       await estabilizar(f);
       raiz(f).querySelector('#usuario-form')!.dispatchEvent(new Event('submit'));
       await estabilizar(f);
     }
-
-    const dialogoClave = (f: ComponentFixture<unknown>) =>
-      Array.from(raiz(f).querySelectorAll<HTMLDialogElement>('dialog')).find((d) => d.textContent?.includes('Clave temporal de'))!;
 
     it('al crear un usuario se muestra la clave temporal y NO se cierra con Escape ni sin confirmar', async () => {
       const f = await crear('ADMIN');
 
       await crearUsuario(f);
 
-      expect(repo.crear).toHaveBeenCalledExactlyOnceWith({ usuario: 'nuevo.usuario', nombre: 'Persona Nueva', email: 'nuevo@example.com', rol: 'OPERATIVO' });
+      expect(repo.crear).toHaveBeenCalledExactlyOnceWith({ usuario: 'nuevo.usuario', nombre: 'Persona Nueva', email: 'nuevo@example.com', rol: 'OPERATIVO', codigo: '123456' });
       const dialogo = dialogoClave(f);
       expect(dialogo.hasAttribute('open')).toBe(true);
       expect(dialogo.textContent).toContain('Temp-Clave-9999');
@@ -186,18 +193,169 @@ describe('UsuariosPageComponent', () => {
       expect(dialogoClave(f)?.hasAttribute('open') ?? false).toBe(false);
     });
 
-    it('restablecer la clave pide confirmación y luego muestra la clave nueva una sola vez', async () => {
+    it('restablecer la clave pide confirmación con el código y luego muestra la clave nueva una sola vez', async () => {
       const f = await crear('ADMIN');
       boton(fila(f, 'Persona 2'), 'Restablecer clave')!.click();
       await estabilizar(f);
       expect(repo.restablecerClave).not.toHaveBeenCalled();
 
-      const confirmar = Array.from(raiz(f).querySelectorAll('dialog')).map((d) => boton(d, 'Restablecer clave')).find((b) => b?.className.includes('bg-destructive'))!;
-      confirmar.click();
+      escribirCodigo(f, '654321');
+      boton(raiz(f).querySelector('dialog[open]')!, 'Restablecer clave')!.click();
       await estabilizar(f);
 
-      expect(repo.restablecerClave).toHaveBeenCalledExactlyOnceWith(2);
+      expect(repo.restablecerClave).toHaveBeenCalledExactlyOnceWith(2, '654321');
       expect(dialogoClave(f).textContent).toContain('Otra-Clave-7777');
+    });
+  });
+
+  describe('código del segundo factor', () => {
+    const abrirReset = async (f: ComponentFixture<UsuariosPageComponent>, fila_: string, accion: string) => {
+      boton(fila(f, fila_), accion)!.click();
+      await estabilizar(f);
+    };
+    const enviarReset = async (f: ComponentFixture<UsuariosPageComponent>) => {
+      raiz(f).querySelector<HTMLFormElement>('dialog[open] form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+    };
+    const errorServidor = (code: number, message: string) => throwError(() => ({ code, message }));
+
+    it('sin código no se manda nada: restablecer clave y segundo factor lo exigen', async () => {
+      const f = await crear('ADMIN');
+
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      await enviarReset(f);
+      expect(repo.restablecerClave).not.toHaveBeenCalled();
+      expect(raiz(f).querySelector('dialog[open]')!.textContent).toContain('Escribe el código');
+
+      boton(raiz(f).querySelector('dialog[open]')!, 'Cancelar')!.click();
+      await estabilizar(f);
+      await abrirReset(f, 'Persona 3', 'Restablecer segundo factor');
+      await enviarReset(f);
+      expect(repo.restablecerMfa).not.toHaveBeenCalled();
+    });
+
+    it('un código que no son 6 dígitos se frena en pantalla', async () => {
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      escribirCodigo(f, '12ab');
+      await enviarReset(f);
+
+      expect(repo.restablecerClave).not.toHaveBeenCalled();
+      expect(raiz(f).querySelector('dialog[open]')!.textContent).toContain('Son 6 dígitos');
+    });
+
+    it('restablecer el segundo factor manda el código y avisa', async () => {
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 3', 'Restablecer segundo factor');
+      escribirCodigo(f, '111222');
+      await enviarReset(f);
+
+      expect(repo.restablecerMfa).toHaveBeenCalledExactlyOnceWith(3, '111222');
+      expect(TestBed.inject(ToastService).toasts().map((t) => t.mensaje)).toContain('Segundo factor de "usuario3" restablecido: lo configurará al ingresar.');
+      expect(raiz(f).querySelector('dialog[open]')).toBeNull();
+    });
+
+    it('un código incorrecto (401) no cierra el diálogo, lo dice bajo el campo, borra el código y deja reintentar', async () => {
+      repo.restablecerClave.mockReturnValueOnce(errorServidor(20013, 'Codigo incorrecto'));
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      escribirCodigo(f, '000000');
+      await enviarReset(f);
+
+      const dialogo = raiz(f).querySelector('dialog[open]')!;
+      expect(dialogo.textContent).toContain('El código es incorrecto');
+      expect(valorCodigo(f)).toBe('');
+      expect(raiz(f).textContent).not.toContain('Otra-Clave-7777');
+
+      escribirCodigo(f, '333444');
+      await enviarReset(f);
+      expect(repo.restablecerClave).toHaveBeenLastCalledWith(2, '333444');
+      expect(dialogoClave(f).textContent).toContain('Otra-Clave-7777');
+    });
+
+    it('un código ya usado pide esperar al siguiente', async () => {
+      repo.restablecerMfa.mockReturnValueOnce(errorServidor(20013, 'Ese codigo ya fue usado'));
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 3', 'Restablecer segundo factor');
+      escribirCodigo(f, '123123');
+      await enviarReset(f);
+
+      expect(raiz(f).querySelector('dialog[open]')!.textContent).toContain('Espera unos segundos');
+    });
+
+    it('cuenta bloqueada (423) y demasiados intentos (429) muestran el mensaje del servidor y dejan el diálogo abierto', async () => {
+      const f = await crear('ADMIN');
+
+      repo.restablecerClave.mockReturnValueOnce(errorServidor(20014, 'Cuenta bloqueada por 15 minutos.'));
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      escribirCodigo(f, '123456');
+      await enviarReset(f);
+      expect(raiz(f).querySelector('dialog[open] [role=alert]')!.textContent).toContain('Cuenta bloqueada');
+
+      repo.restablecerClave.mockReturnValueOnce(errorServidor(20015, 'Demasiados codigos'));
+      escribirCodigo(f, '654321');
+      await enviarReset(f);
+      expect(raiz(f).querySelector('dialog[open] [role=alert]')!.textContent).toContain('Demasiados intentos');
+    });
+
+    it('una regla de la base (20006) sobre la cuenta no se confunde con «correo en uso»', async () => {
+      repo.restablecerClave.mockReturnValueOnce(errorServidor(20006, 'No puede restablecer su propia clave.'));
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      escribirCodigo(f, '123456');
+      await enviarReset(f);
+
+      const texto = raiz(f).querySelector('dialog[open]')!.textContent!;
+      expect(texto).toContain('No puede restablecer su propia clave.');
+      expect(texto).not.toContain('correo');
+    });
+
+    it('el código no se conserva: al volver a abrir el diálogo el campo está vacío', async () => {
+      const f = await crear('ADMIN');
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      escribirCodigo(f, '123456');
+      boton(raiz(f).querySelector('dialog[open]')!, 'Cancelar')!.click();
+      await estabilizar(f);
+
+      await abrirReset(f, 'Persona 2', 'Restablecer clave');
+      expect(valorCodigo(f)).toBe('');
+    });
+
+    it('editar y crear usuarios piden el código; si falta, no se envía', async () => {
+      const f = await crear('ADMIN');
+      boton(fila(f, 'Persona 2'), 'Editar')!.click();
+      await estabilizar(f);
+      raiz(f).querySelector('#usuario-form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+
+      expect(repo.actualizar).not.toHaveBeenCalled();
+      expect(raiz(f).querySelector('dialog[open]')!.textContent).toContain('Escribe el código');
+
+      escribirCodigo(f, '987654');
+      raiz(f).querySelector('#usuario-form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+      expect(repo.actualizar).toHaveBeenCalledExactlyOnceWith(2, { nombre: 'Persona 2', email: 'p2@example.com', rol: 'OPERATIVO', codigo: '987654' });
+    });
+
+    it('al editar, un código incorrecto deja el formulario abierto y lo marca en el campo del código', async () => {
+      repo.actualizar.mockReturnValueOnce(errorServidor(20013, 'Codigo incorrecto'));
+      const f = await crear('ADMIN');
+      boton(fila(f, 'Persona 2'), 'Editar')!.click();
+      await estabilizar(f);
+      escribirCodigo(f, '000000');
+      raiz(f).querySelector('#usuario-form')!.dispatchEvent(new Event('submit'));
+      await estabilizar(f);
+
+      expect(raiz(f).querySelector('dialog[open]')!.textContent).toContain('El código es incorrecto');
+      expect(valorCodigo(f)).toBe('');
+    });
+
+    it('desactivar, desbloquear y cerrar sesiones siguen sin pedir código', async () => {
+      const f = await crear('ADMIN');
+      boton(fila(f, 'Persona 2'), 'Desactivar')!.click();
+      await estabilizar(f);
+
+      expect(raiz(f).querySelector('dialog[open] input[inputmode=numeric]')).toBeNull();
     });
   });
 

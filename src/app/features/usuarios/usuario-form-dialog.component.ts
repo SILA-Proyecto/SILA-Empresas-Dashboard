@@ -7,6 +7,8 @@ import type { Rol } from '../../core/auth/auth.models';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { SilaValidators, limpiarTexto } from '../../shared/validators/sila-validators';
+import { CampoCodigoMfaComponent } from '../auth/campo-codigo-mfa.component';
+import { describirErrorSensible } from '../auth/errores-mfa';
 import { USUARIOS_REPOSITORY } from './data/usuarios.provider';
 import { ROLES, Usuario, UsuarioConClaveTemporal } from './models/usuarios.models';
 
@@ -19,7 +21,7 @@ export interface UsuarioGuardado {
 @Component({
   selector: 'app-usuario-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [CampoCodigoMfaComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule],
   template: `
     <app-dialog [open]="abierto()" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
       <form id="usuario-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
@@ -47,6 +49,11 @@ export interface UsuarioGuardado {
             }
           </select>
         </app-form-field>
+
+        <div class="sm:col-span-2">
+          <app-campo-codigo-mfa [control]="form.controls.codigo" [error]="errorCodigo()" />
+          <p class="mt-1 text-xs text-muted-foreground">Confirma con tu código: es tu segundo factor, el de quien hace este cambio. Cada código sirve una sola vez.</p>
+        </div>
       </form>
 
       @if (errorGeneral(); as mensaje) {
@@ -81,12 +88,15 @@ export class UsuarioFormDialogComponent {
   protected readonly titulo = computed(() => (this.usuario() ? 'Editar usuario' : 'Nuevo usuario'));
   protected readonly guardando = signal(false);
   protected readonly errorGeneral = signal<string | null>(null);
+  protected readonly errorCodigo = signal<string | null>(null);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     usuario: ['', [SilaValidators.requerido, SilaValidators.nombreUsuario]],
     nombre: ['', [SilaValidators.requerido, SilaValidators.longitud(3, 120)]],
     email: ['', [SilaValidators.requerido, Validators.email, SilaValidators.longitud(1, 150)]],
     rol: ['OPERATIVO' as Rol, Validators.required],
+    // Its validators are set by `app-campo-codigo-mfa`; without the field it is never validated.
+    codigo: [''],
   });
 
   constructor() {
@@ -94,7 +104,9 @@ export class UsuarioFormDialogComponent {
       if (!this.abierto()) return;
       const u = this.usuario();
       this.errorGeneral.set(null);
-      this.form.reset({ usuario: u?.usuario ?? '', nombre: u?.nombre ?? '', email: u?.email ?? '', rol: u?.rol ?? 'OPERATIVO' });
+      this.errorCodigo.set(null);
+      // The code is never kept: every opening starts with it empty.
+      this.form.reset({ usuario: u?.usuario ?? '', nombre: u?.nombre ?? '', email: u?.email ?? '', rol: u?.rol ?? 'OPERATIVO', codigo: '' });
       // The user name is the identity: it is only typed when creating.
       if (u) this.form.controls.usuario.disable();
       else this.form.controls.usuario.enable();
@@ -113,25 +125,34 @@ export class UsuarioFormDialogComponent {
     const valor = this.form.getRawValue();
     const nombre = limpiarTexto(valor.nombre);
     const email = valor.email.trim().toLowerCase();
+    const codigo = valor.codigo.trim();
     const actual = this.usuario();
 
     this.guardando.set(true);
     this.errorGeneral.set(null);
+    this.errorCodigo.set(null);
     const peticion: Observable<Usuario | UsuarioConClaveTemporal> = actual
-      ? this.repo.actualizar(actual.id_usuario, { nombre, email, rol: valor.rol })
-      : this.repo.crear({ usuario: valor.usuario.trim(), nombre, email, rol: valor.rol });
+      ? this.repo.actualizar(actual.id_usuario, { nombre, email, rol: valor.rol, codigo })
+      : this.repo.crear({ usuario: valor.usuario.trim(), nombre, email, rol: valor.rol, codigo });
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (respuesta) => {
         this.guardando.set(false);
+        this.form.controls.codigo.reset('');
         // Create answers { usuario, clave_temporal }; update answers the user itself.
         this.guardado.emit('clave_temporal' in respuesta ? { usuario: respuesta.usuario, clave_temporal: respuesta.clave_temporal } : { usuario: respuesta });
       },
       error: (fallo: unknown) => {
         this.guardando.set(false);
+        // A code works once and may already be spent: whatever failed, the next try needs a fresh one.
+        this.form.controls.codigo.reset('');
         if (isApiError(fallo) && fallo.code === 20006) {
           this.form.controls.usuario.setErrors({ duplicado: true });
+          this.errorGeneral.set(this.errores.describe(fallo).mensaje);
+          return;
         }
-        this.errorGeneral.set(this.errores.describe(fallo).mensaje);
+        const e = describirErrorSensible(this.errores, fallo);
+        if (e.campo === 'codigo') this.errorCodigo.set(e.mensaje);
+        else this.errorGeneral.set(e.mensaje);
       },
     });
   }

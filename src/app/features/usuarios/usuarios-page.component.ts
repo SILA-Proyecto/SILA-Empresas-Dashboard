@@ -1,5 +1,5 @@
 import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import type { Observable } from 'rxjs';
@@ -17,7 +17,9 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatoFechaHora } from '../../shared/utils/formato-co';
 import { crearListado } from '../../shared/utils/listado';
+import { describirErrorSensible } from '../auth/errores-mfa';
 import { ClaveTemporal, ClaveTemporalDialogComponent } from './clave-temporal-dialog.component';
+import { ConfirmarConCodigoDialogComponent } from './confirmar-con-codigo-dialog.component';
 import { USUARIOS_REPOSITORY } from './data/usuarios.provider';
 import type { Usuario, UsuarioConClaveTemporal } from './models/usuarios.models';
 import { UsuarioFormDialogComponent, UsuarioGuardado } from './usuario-form-dialog.component';
@@ -39,6 +41,7 @@ const MOTIVO_PROPIA_CUENTA = 'No puedes hacer esto sobre tu propia cuenta: lo ha
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FiltrosPlegablesComponent, 
     ClaveTemporalDialogComponent,
+    ConfirmarConCodigoDialogComponent,
     ConfirmDialogComponent,
     DataTableCellDirective,
     HasRoleDirective,
@@ -109,6 +112,11 @@ export class UsuariosPageComponent {
   protected readonly editando = signal<Usuario | null | undefined>(undefined);
   protected readonly accion = signal<Accion | null>(null);
   protected readonly procesando = signal(false);
+  /** Resetting a password or a second factor also asks for the ADMIN's own second-factor code. */
+  protected readonly pideCodigo = computed(() => this.accion()?.tipo === 'clave' || this.accion()?.tipo === 'mfa');
+  protected readonly errorAccion = signal<string | null>(null);
+  protected readonly errorCodigoAccion = signal<string | null>(null);
+  private readonly dialogoCodigo = viewChild(ConfirmarConCodigoDialogComponent);
   protected readonly claveTemporal = signal<ClaveTemporal | null>(null);
   /** Whose open sessions are being looked at. */
   protected readonly verSesionesDe = signal<Usuario | null>(null);
@@ -168,11 +176,19 @@ export class UsuariosPageComponent {
     this.listado.recargar();
   }
 
-  protected confirmarAccion(): void {
+  protected abrirAccion(tipo: TipoAccion, usuario: Usuario): void {
+    this.errorAccion.set(null);
+    this.errorCodigoAccion.set(null);
+    this.accion.set({ tipo, usuario });
+  }
+
+  protected confirmarAccion(codigo = ''): void {
     const a = this.accion();
     if (!a || this.procesando()) return;
     const id = a.usuario.id_usuario;
     this.procesando.set(true);
+    this.errorAccion.set(null);
+    this.errorCodigoAccion.set(null);
     let peticion: Observable<Usuario | UsuarioConClaveTemporal>;
     switch (a.tipo) {
       case 'estado':
@@ -182,10 +198,10 @@ export class UsuariosPageComponent {
         peticion = this.repo.desbloquear(id);
         break;
       case 'clave':
-        peticion = this.repo.restablecerClave(id);
+        peticion = this.repo.restablecerClave(id, codigo);
         break;
       case 'mfa':
-        peticion = this.repo.restablecerMfa(id);
+        peticion = this.repo.restablecerMfa(id, codigo);
         break;
       case 'sesiones':
         peticion = this.repo.cerrarSesiones(id);
@@ -194,12 +210,22 @@ export class UsuariosPageComponent {
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (respuesta) => {
         this.procesando.set(false);
+        this.dialogoCodigo()?.limpiarCodigo();
         this.accion.set(null);
         this.avisarExito(a, respuesta);
         this.listado.recargar();
       },
       error: (fallo: unknown) => {
         this.procesando.set(false);
+        if (this.pideCodigo()) {
+          // Stay open so the code can be typed again; a code that failed (or was spent) is never kept.
+          this.dialogoCodigo()?.limpiarCodigo();
+          // 20006 here is a rule of the base about the account, not the «e-mail in use» of the personal data form.
+          const e = describirErrorSensible(this.errores, fallo);
+          if (e.campo === 'codigo') this.errorCodigoAccion.set(e.mensaje);
+          else this.errorAccion.set(e.campo === 'email' ? this.errores.describe(fallo).mensaje : e.mensaje);
+          return;
+        }
         this.accion.set(null);
         const { mensaje, supportRef } = this.errores.describe(fallo);
         this.toast.error(mensaje, supportRef);

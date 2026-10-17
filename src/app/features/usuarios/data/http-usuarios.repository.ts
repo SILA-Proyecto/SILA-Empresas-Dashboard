@@ -28,11 +28,11 @@ export class HttpUsuariosRepository extends UsuariosRepository {
   desbloquear(id: number): Observable<Usuario> {
     return this.api.post<Usuario>(`${BASE}/${id}/desbloquear`, null);
   }
-  restablecerClave(id: number): Observable<UsuarioConClaveTemporal> {
-    return this.api.post<UsuarioConClaveTemporal>(`${BASE}/${id}/restablecer-clave`, null);
+  restablecerClave(id: number, codigo: string): Observable<UsuarioConClaveTemporal> {
+    return this.api.post<UsuarioConClaveTemporal>(`${BASE}/${id}/restablecer-clave`, { codigo });
   }
-  restablecerMfa(id: number): Observable<Usuario> {
-    return this.api.post<Usuario>(`${BASE}/${id}/restablecer-mfa`, null);
+  restablecerMfa(id: number, codigo: string): Observable<Usuario> {
+    return this.api.post<Usuario>(`${BASE}/${id}/restablecer-mfa`, { codigo });
   }
   sesiones(id: number): Observable<SesionAbierta[]> {
     return this.api.get<SesionAbierta[]>(`${BASE}/${id}/sesiones`);
