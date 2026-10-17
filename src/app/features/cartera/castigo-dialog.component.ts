@@ -17,7 +17,7 @@ const MOTIVO = { min: 10, max: 255 };
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DialogComponent, IconComponent],
   template: `
-    <app-dialog [open]="cliente() !== null" title="Castigar cartera" [cerrable]="!enviando()" (closed)="cerrado.emit()">
+    <app-dialog [open]="cliente() !== null" title="Dar por perdida la deuda" [cerrable]="!enviando()" (closed)="cerrado.emit()">
       @if (cliente(); as c) {
         <div class="space-y-4 text-sm">
           <p class="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-3" role="alert">
@@ -44,7 +44,7 @@ const MOTIVO = { min: 10, max: 255 };
       <div dialogFooter class="flex gap-2">
         <button type="button" class="sila-btn sila-btn-outline" [disabled]="enviando()" (click)="cerrado.emit()">Cancelar</button>
         <button type="button" class="sila-btn bg-destructive text-white" [disabled]="!puedeConfirmar() || enviando()" [attr.aria-busy]="enviando()" (click)="castigar()">
-          {{ enviando() ? 'Procesando…' : 'Castigar cartera' }}
+          {{ enviando() ? 'Procesando…' : 'Dar por perdida' }}
         </button>
       </div>
     </app-dialog>

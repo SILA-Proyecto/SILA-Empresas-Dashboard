@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
 import { IconComponent } from '../icon/icon.component';
 
+let siguienteDialogo = 0;
+
 /**
  * Thin wrapper around the native `<dialog>` element (the original template's
  * `.sila-dialog`): `open` drives `showModal()`/`close()`, and Escape,
@@ -15,6 +17,7 @@ import { IconComponent } from '../icon/icon.component';
     <dialog
       #dialog
       class="sila-dialog"
+      [attr.aria-labelledby]="idTitulo"
       [class.max-w-2xl]="wide()"
       (cancel)="onCancel($event)"
       (close)="closed.emit()"
@@ -22,13 +25,13 @@ import { IconComponent } from '../icon/icon.component';
     >
       <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border p-4">
         <div>
-          <h2 class="text-base font-semibold">{{ title() }}</h2>
+          <h2 [id]="idTitulo" class="text-base font-semibold">{{ title() }}</h2>
           @if (description()) {
             <p class="mt-0.5 text-xs text-muted-foreground">{{ description() }}</p>
           }
         </div>
         @if (cerrable()) {
-          <button type="button" class="sila-btn sila-btn-ghost h-8 w-8 shrink-0 px-0" (click)="closed.emit()">
+          <button type="button" class="sila-btn sila-btn-ghost h-11 w-11 shrink-0 px-0 sm:h-8 sm:w-8" (click)="closed.emit()">
             <app-icon name="lucideX" class="size-4" />
             <span class="sr-only">Cerrar</span>
           </button>
@@ -44,6 +47,9 @@ import { IconComponent } from '../icon/icon.component';
   `,
 })
 export class DialogComponent {
+  /** Unique per instance so a screen reader announces the title when the dialog opens. */
+  protected readonly idTitulo = `dialogo-titulo-${siguienteDialogo++}`;
+
   readonly open = input(false);
   readonly title = input.required<string>();
   readonly description = input('');

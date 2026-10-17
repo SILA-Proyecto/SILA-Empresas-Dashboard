@@ -23,13 +23,13 @@
       <h2 id="pv-productos" class="sr-only">Productos</h2>
       <div class="mb-4 flex flex-wrap items-end gap-3">
         <div class="min-w-0 flex-1">
-          <label for="pv-buscador" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar por nombre o SKU</label>
+          <label for="pv-buscador" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar por nombre o SKU (con el escáner, pulsa Enter)</label>
           <input
             #buscador
             id="pv-buscador"
             type="search"
             class="sila-input"
-            placeholder="Escribe o escanea el código y pulsa Enter"
+            placeholder="Nombre, código o escáner"
             autocomplete="off"
             maxlength="100"
             [value]="texto.crudo()"
@@ -143,7 +143,7 @@
 
       <!-- Lines -->
       @if (lineas().length === 0) {
-        <p class="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Elige productos de la izquierda para armar la venta.</p>
+        <p class="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Elige productos para armar la venta.</p>
       } @else {
         <ul class="divide-y divide-border" aria-label="Líneas del ticket">
           @for (l of lineas(); track l.id_producto; let i = $index) {

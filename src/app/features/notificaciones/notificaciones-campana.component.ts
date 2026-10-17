@@ -18,7 +18,7 @@ import { INTERVALO_REFRESCO_MS, NotificacionesService } from './notificaciones.s
     <div class="relative">
       <button
         type="button"
-        class="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        class="relative flex h-11 w-11 items-center justify-center rounded-lg lg:h-10 lg:w-10 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         [attr.aria-label]="etiqueta()"
         aria-haspopup="true"
         [attr.aria-expanded]="abierta()"

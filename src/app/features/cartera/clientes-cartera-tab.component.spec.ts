@@ -44,13 +44,13 @@ describe('ClientesCarteraTabComponent · castigar', () => {
 
   const botones = (f: ComponentFixture<unknown>) => Array.from((f.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('tbody button')).map((b) => b.textContent!.trim());
 
-  it('un ADMIN ve «Castigar cartera»', async () => {
-    expect(botones(await crear('ADMIN')).some((t) => t.startsWith('Castigar cartera'))).toBe(true);
+  it('un ADMIN ve «Dar por perdida la deuda»', async () => {
+    expect(botones(await crear('ADMIN')).some((t) => t.startsWith('Dar por perdida la deuda'))).toBe(true);
   });
 
-  it('un OPERATIVO NO ve «Castigar cartera», pero sí registrar abono', async () => {
+  it('un OPERATIVO NO ve «Dar por perdida la deuda», pero sí registrar abono', async () => {
     const textos = botones(await crear('OPERATIVO'));
-    expect(textos.some((t) => t.startsWith('Castigar cartera'))).toBe(false);
+    expect(textos.some((t) => t.startsWith('Dar por perdida la deuda'))).toBe(false);
     expect(textos.some((t) => t.startsWith('Registrar abono'))).toBe(true);
   });
 });

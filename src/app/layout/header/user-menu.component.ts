@@ -16,7 +16,7 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
         <button
           #disparador
           type="button"
-          class="flex h-9 items-center gap-2 rounded-lg px-2 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+          class="flex h-11 items-center gap-2 rounded-lg px-2 lg:h-10 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
           aria-haspopup="menu"
           [attr.aria-expanded]="abierto()"
           (click)="alternar()"

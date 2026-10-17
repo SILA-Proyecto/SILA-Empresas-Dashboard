@@ -209,7 +209,7 @@ function pendiente(estado: string): boolean {
           <h3 class="mb-2 text-sm font-semibold">Tabla del año</h3>
           @if (movil()) {
             <ul class="space-y-2" aria-label="Quincenas del año" data-testid="tabla-anio">
-              @for (p of periodosAnio; track p.id_periodo) {
+              @for (p of visiblesMovil(periodosAnio); track p.id_periodo) {
                 <li>
                   <button type="button" class="sila-card w-full p-3 text-start" [class.border-primary]="p.id_periodo === seleccionada()?.id_periodo" [class.bg-primary/10]="p.id_periodo === seleccionada()?.id_periodo" [class.opacity-60]="atenuada(p)" [attr.aria-current]="p.id_periodo === seleccionada()?.id_periodo ? 'true' : null" data-testid="fila-anio" (click)="elegir(p.id_periodo)">
                     <span class="flex items-center justify-between gap-2">
@@ -223,6 +223,13 @@ function pendiente(estado: string): boolean {
                       <span class="text-muted-foreground">Por pagar</span><span class="text-end tabular-nums">{{ cop(p.por_pagar_proveedores) }}</span>
                       <span class="text-muted-foreground">Cartera pendiente</span><span class="text-end tabular-nums">{{ cop(p.cartera_pendiente) }}</span>
                     </span>
+                  </button>
+                </li>
+              }
+              @if (sinMovimiento(periodosAnio) > 0) {
+                <li>
+                  <button type="button" class="sila-btn sila-btn-outline w-full" data-testid="ver-sin-movimiento" [attr.aria-expanded]="verSinMovimiento()" (click)="verSinMovimiento.set(!verSinMovimiento())">
+                    {{ verSinMovimiento() ? 'Ocultar las quincenas sin movimiento' : 'Mostrar ' + sinMovimiento(periodosAnio) + ' quincenas sin movimiento' }}
                   </button>
                 </li>
               }
@@ -355,6 +362,21 @@ export class ResultadoQuincenaPageComponent {
 
   protected atenuada(p: Periodo): boolean {
     return esAtenuada(p, this.hoy());
+  }
+
+  /** On a phone the list of the year hides the quincenas with nothing in them (the chosen one always shows). */
+  protected readonly verSinMovimiento = signal(false);
+
+  private conMovimiento(p: Periodo): boolean {
+    return p.id_periodo === this.seleccionada()?.id_periodo || [p.ingresos_ventas, p.resultado_estimado, p.caja_neta, p.por_pagar_proveedores, p.cartera_pendiente].some((v) => v !== 0);
+  }
+
+  protected visiblesMovil(periodos: readonly Periodo[]): readonly Periodo[] {
+    return this.verSinMovimiento() ? periodos : periodos.filter((p) => this.conMovimiento(p));
+  }
+
+  protected sinMovimiento(periodos: readonly Periodo[]): number {
+    return periodos.filter((p) => !this.conMovimiento(p)).length;
   }
 
   protected elegirAnio(valor: string): void {

@@ -97,7 +97,7 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
           <button type="button" class="sila-btn sila-btn-primary sila-btn-sm" [disabled]="c.saldo_deudor <= 0" (click)="abonando.set(c)">Registrar abono<span class="sr-only"> de {{ c.cliente }}</span></button>
           <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="viendo.set(c)">Ver ventas<span class="sr-only"> de {{ c.cliente }}</span></button>
           <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="verAbonos.emit(c)">Historial de abonos<span class="sr-only"> de {{ c.cliente }}</span></button>
-          <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline sila-btn-sm text-destructive" [disabled]="c.saldo_deudor <= 0" (click)="castigando.set(c)">Castigar cartera<span class="sr-only"> de {{ c.cliente }}</span></button>
+          <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline sila-btn-sm text-destructive" [disabled]="c.saldo_deudor <= 0" (click)="castigando.set(c)">Dar por perdida la deuda<span class="sr-only"> de {{ c.cliente }}</span></button>
         </div>
       </ng-template>
     </app-server-data-table>

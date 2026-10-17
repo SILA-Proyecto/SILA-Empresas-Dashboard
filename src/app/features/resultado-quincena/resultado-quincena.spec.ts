@@ -7,6 +7,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { Subject, of, throwError } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
 import { ChartThemeService } from '../../shared/services/chart-theme.service';
+import { EsMovilService } from '../../shared/services/es-movil.service';
 import { GASTOS_REPOSITORY } from '../gastos/data/gastos.provider';
 import { PERIODOS_REPOSITORY } from '../periodos/data/periodos.provider';
 import { PERIODOS_ROUTES } from '../periodos/periodos.routes';
@@ -272,6 +273,20 @@ describe('Resultado por quincena', () => {
       }
       expect(el.querySelector<HTMLButtonElement>('[data-testid=anterior]')!.disabled).toBe(true);
       expect(el.querySelector<HTMLButtonElement>('[data-testid=siguiente]')!.disabled).toBe(false);
+    });
+
+    it('en el celular la lista del año esconde las quincenas sin movimiento y las muestra con un botón', async () => {
+      TestBed.inject(EsMovilService).movil.set(true);
+      const { f, el } = await abrir();
+      const tarjetas = () => el.querySelectorAll('[data-testid=tabla-anio] [data-testid=fila-anio]');
+      expect(tarjetas()).toHaveLength(19); // 18 con datos + la elegida (octubre 1.ª); las 5 de noviembre a diciembre están vacías
+      const boton = el.querySelector<HTMLButtonElement>('[data-testid=ver-sin-movimiento]')!;
+      expect(limpio(boton.textContent)).toBe('Mostrar 5 quincenas sin movimiento');
+
+      boton.click();
+      await estabilizar(f);
+      expect(tarjetas()).toHaveLength(24);
+      expect(limpio(el.querySelector('[data-testid=ver-sin-movimiento]')!.textContent)).toBe('Ocultar las quincenas sin movimiento');
     });
 
     it('hacer clic en una fila de la tabla selecciona esa quincena y la resalta', async () => {

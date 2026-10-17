@@ -47,6 +47,22 @@ describe('Visor de archivos', () => {
     expect(visor.bloqueado()).toBeNull();
   });
 
+  it.each([
+    ['text/html', 'pagina.html'],
+    ['image/svg+xml', 'logo.svg'],
+    ['application/octet-stream', 'datos.bin'],
+  ])('un archivo %s no se abre (una URL blob tiene el origen de la app): se descarga', async (tipo, nombre) => {
+    repo['contenido'].mockReturnValue(of({ blob: new Blob(['<script>alert(1)</script>'], { type: tipo }), nombre, idArchivo: 9, claveGenerada: null }));
+    const abrir = vi.spyOn(window, 'open');
+    const clic = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    await visor.ver(9, nombre);
+
+    expect(abrir).not.toHaveBeenCalled();
+    expect(clic).toHaveBeenCalledTimes(1);
+    expect(visor.imagen()).toBeNull();
+    expect(visor.bloqueado()).toBeNull();
+  });
+
   it('un PDF NUNCA se incrusta en la página (ni iframe, ni object, ni embed)', async () => {
     vi.spyOn(window, 'open').mockReturnValue({} as Window);
     await visor.ver(7);

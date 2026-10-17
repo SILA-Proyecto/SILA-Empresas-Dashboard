@@ -5,7 +5,7 @@ Probada el 2026-10-09 contra el build de producción con el login real (backend 
 ## Política recomendada
 
 ```
-Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 ```
 
 | Directiva | Valor | Por qué |
@@ -13,14 +13,14 @@ Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'
 | `default-src` | `'self'` | Todo lo que no se nombra aparte, solo del propio origen. |
 | `script-src` | `'self'` | **Sin `unsafe-inline` ni `unsafe-eval`.** Es la defensa principal contra XSS: un script inyectado no corre. Todo el JavaScript (incluido el trozo de `qrcode`, que se carga aparte) viene del propio origen. |
 | `style-src` | `'self' 'unsafe-inline'` | **Única concesión.** Angular crea una etiqueta `<style>` por componente al ejecutarse; sin `'unsafe-inline'` se bloquean (con `'self'` a secas, solo la pantalla de login ya produce 4 violaciones). Un estilo en línea no ejecuta código; el riesgo es mucho menor que el de un script. Ver «Endurecer más» abajo. |
-| `img-src` | `'self' data:` | `data:` es para el **código QR** del segundo factor (una imagen PNG generada en el navegador; el secreto no sale a ningún servicio externo). |
+| `img-src` | `'self' data: blob:` | `data:` es para el **código QR** del segundo factor (una imagen PNG generada en el navegador; el secreto no sale a ningún servicio externo). `blob:` es para el visor de imágenes de Archivos (ver abajo). |
 | `font-src` | `'self'` | Las fuentes (Geist) están en `/fonts`, sin CDN. |
 | `connect-src` | `'self'` | Las llamadas al API van al mismo origen (`/api`), por el proxy. No hay otros orígenes. |
 | `frame-ancestors` | `'none'` | Nadie puede incrustar el dashboard en un `<iframe>` (clickjacking). |
 | `base-uri` | `'self'` | Evita que un `<base>` inyectado cambie hacia dónde apuntan las rutas relativas. |
 | `form-action` | `'self'` | Los formularios solo envían al mismo origen. |
 
-No hizo falta permitir ningún origen externo (ni fuentes, ni íconos, ni analíticas), ni `blob:` (la descarga de los códigos de respaldo funciona con la política tal cual), ni `unsafe-inline` en scripts.
+No hizo falta permitir ningún origen externo (ni fuentes, ni íconos, ni analíticas) ni `unsafe-inline` en scripts. `blob:` solo se permite en `img-src`.
 
 ### Qué hubo que cambiar en la app para poder usar `script-src 'self'`
 
@@ -38,13 +38,17 @@ El build de producción de Angular inserta por defecto un **script en línea** (
 
 La cookie de renovación (`sila_refresh`) es `HttpOnly`, `SameSite=Strict` y, **en producción con HTTPS, `Secure`** (`SILA_COOKIE_SECURE=true` en el backend; en desarrollo `./arrancar.sh` la deja en `false`).
 
+### Configuración lista para usar
+
+`deploy/nginx.conf` y `deploy/cabeceras-seguridad.conf` traen el servidor completo (HTTPS, `/api` al backend, caché, SPA y estas cabeceras, repetidas en cada `location` por la regla de abajo). Las instrucciones de instalación están al inicio de `deploy/nginx.conf`. **Sin probar contra un nginx real** (la máquina de desarrollo no lo tiene): correr `nginx -t` antes de recargar.
+
 ### Ejemplo (nginx)
 
 ```nginx
 location /api/ { proxy_pass http://127.0.0.1:8080; }          # mismo origen: la cookie y el CSRF del backend lo exigen
 location / {
   root /var/www/sila; try_files $uri /index.html;
-  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
   add_header X-Content-Type-Options nosniff always;
   add_header Referrer-Policy strict-origin-when-cross-origin always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
@@ -79,10 +83,4 @@ Quitar `'unsafe-inline'` de `style-src` es posible con un **nonce** por respuest
 
 ## Archivos (módulo de archivos y PDF de comprobantes)
 
-El visor de imágenes del módulo Archivos muestra la imagen con una URL `blob:` creada en el navegador (`URL.createObjectURL`) a partir de lo que devuelve el API. Hace falta **una sola** línea nueva en la política del proxy:
-
-```
-img-src 'self' data: blob:
-```
-
-Todo lo demás queda igual. En concreto **no** se agrega `blob:` a `script-src`, `connect-src` ni `frame-src`, y **no** se incrusta ningún PDF en `<iframe>`/`<object>`: los PDF se abren en una pestaña nueva (el visor propio del navegador, aislado de la página) o se descargan. Razón: un PDF subido por el ADMIN pasa por antivirus y se rechaza si trae JavaScript, pero igual no es contenido de la página y no debe vivir dentro de ella. Las descargas (`<a download>` con `blob:`) no las restringe la CSP.
+El visor de imágenes del módulo Archivos muestra la imagen con una URL `blob:` creada en el navegador (`URL.createObjectURL`) a partir de lo que devuelve el API. Hace falta `blob:` en `img-src` (ya incluido arriba y en `deploy/`). En concreto **no** se agrega `blob:` a `script-src`, `connect-src` ni `frame-src`, y **no** se incrusta ningún PDF en `<iframe>`/`<object>`: los PDF se abren en una pestaña nueva (el visor propio del navegador, aislado de la página) o se descargan. **Solo se abren los PDF** (la URL `blob:` hereda el origen de la app, así que un HTML o SVG subido correría con sus permisos): cualquier otro tipo que no sea imagen JPEG/PNG se descarga. Razón: un PDF subido por el ADMIN pasa por antivirus y se rechaza si trae JavaScript, pero igual no es contenido de la página y no debe vivir dentro de ella. Las descargas (`<a download>` con `blob:`) no las restringe la CSP.

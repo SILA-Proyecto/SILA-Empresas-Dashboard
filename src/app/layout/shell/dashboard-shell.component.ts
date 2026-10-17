@@ -18,4 +18,10 @@ import { SidebarStateService } from '../services/sidebar-state.service';
 })
 export class DashboardShellComponent {
   protected readonly sidebarState = inject(SidebarStateService);
+
+  /** Moves the focus only: a plain `#main-content` link would reload the app (the page has `<base href="/">`). */
+  protected saltarAlContenido(evento: Event): void {
+    evento.preventDefault();
+    document.getElementById('main-content')?.focus();
+  }
 }

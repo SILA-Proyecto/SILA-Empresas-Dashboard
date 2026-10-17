@@ -3,9 +3,8 @@ import { firstValueFrom } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { ARCHIVOS_REPOSITORY } from './data/archivos.provider';
-import { esImagen } from './archivos.logica';
+import { esImagen, esPdf, nombreDescarga } from './archivos.logica';
 import { guardarBlob } from './guardar-archivo';
-import { nombreDescarga } from './archivos.logica';
 import type { RespuestaArchivo } from '../../core/api/archivo-cabeceras';
 
 /** What the viewer dialogs show. Only `blob:` URLs made here, and only for `<img>` or an `Abrir` link: never inside the page. */
@@ -19,7 +18,7 @@ const VIDA_URL_PESTANA_MS = 2 * 60 * 1000;
 
 /**
  * «Ver» a file. An IMAGE goes to the viewer dialog (`<img [src]="blob:…">`). A PDF opens in a NEW TAB (never in an `<iframe>`:
- * an uploaded PDF is not page content); if the browser blocks the tab, an `Abrir` button is offered. The bytes are fetched on
+ * an uploaded PDF is not page content); if the browser blocks the tab, an `Abrir` button is offered. Any other type is downloaded instead. The bytes are fetched on
  * demand and the `blob:` URLs are released when the viewer closes (or after a while, for the tab).
  */
 @Injectable({ providedIn: 'root' })
@@ -51,12 +50,19 @@ export class VisorArchivosService {
   /** Shows bytes already in hand (also used by «Ver documento», which decrypts a `.sila`). */
   mostrar(respuesta: RespuestaArchivo, nombreAlterno = 'archivo'): void {
     const nombre = nombreDescarga(respuesta.nombre, nombreAlterno);
-    const url = URL.createObjectURL(respuesta.blob);
-    if (esImagen(respuesta.blob.type)) {
+    const tipo = respuesta.blob.type;
+    if (esImagen(tipo)) {
       this.cerrar();
-      this.imagen.set({ url, nombre });
+      this.imagen.set({ url: URL.createObjectURL(respuesta.blob), nombre });
       return;
     }
+    if (!esPdf(tipo)) {
+      // A `blob:` URL has the origin of the app: anything the browser could run (HTML, SVG...) is saved, never opened.
+      guardarBlob(respuesta.blob, nombre);
+      return;
+    }
+    // Rebuilt with a fixed type so the tab can only ever show it as a PDF.
+    const url = URL.createObjectURL(new Blob([respuesta.blob], { type: 'application/pdf' }));
     const ventana = window.open(url, '_blank');
     if (ventana) {
       // The new tab must not hold a link back to this page.
