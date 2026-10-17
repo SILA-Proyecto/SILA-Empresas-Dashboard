@@ -75,7 +75,7 @@ describe('ApiService · Idempotency-Key', () => {
 
   describe('escrituras que EXIGEN la cabecera (red de seguridad)', () => {
     const FORMATO = /^[A-Za-z0-9._:-]{8,100}$/;
-    const RUTAS = ['acopio/precios', 'acopio/pagos/3/anular', 'produccion/lotes', 'ventas', 'ventas/3/anular', 'cartera/abonos', 'insumos/compras', 'insumos/compras/2/anular', 'insumos/ajustes', 'finanzas/gastos', 'finanzas/gastos/4/anular', 'documentos', 'documentos/5/subido'];
+    const RUTAS = ['acopio/precios', 'acopio/pagos/3/anular', 'produccion/lotes', 'ventas', 'ventas/3/anular', 'cartera/abonos', 'insumos/compras', 'insumos/compras/2/anular', 'insumos/ajustes', 'finanzas/gastos', 'finanzas/gastos/4/anular', 'documentos', 'documentos/5/subido', 'cuentas-proveedores/precios', 'cuentas-proveedores/pagos', 'cuentas-proveedores/pagos/6/anular'];
 
     it.each(RUTAS)('un POST a %s sin clave explícita sale con un UUID', (path) => {
       api.post(path, {}).subscribe();

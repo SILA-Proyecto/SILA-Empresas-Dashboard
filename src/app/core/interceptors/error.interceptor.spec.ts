@@ -198,6 +198,33 @@ describe('interceptores de autenticación', () => {
       expect(auth.isAuthenticated()).toBe(true);
     });
 
+    it('un 403 (sin permiso) entrega el mensaje del servidor y NO cierra la sesión ni intenta renovar', () => {
+      let error: ApiError | undefined;
+      http.get('/api/v1/usuarios').subscribe({ error: (e) => (error = e) });
+      llamadas('/api/v1/usuarios')[0].flush({ code: 20008, message: 'No tienes permiso.' }, { status: 403, statusText: 'Forbidden' });
+
+      expect(error).toEqual({ code: 20008, message: 'No tienes permiso.' });
+      expect(auth.isAuthenticated()).toBe(true);
+      expect(llamadas('/api/v1/auth/refresh')).toHaveLength(0);
+    });
+
+    it('un 409 de quincena cerrada (20004) llega intacto a quien lo pidió', () => {
+      let error: ApiError | undefined;
+      http.post('/api/v1/ventas', {}).subscribe({ error: (e) => (error = e) });
+      llamadas('/api/v1/ventas')[0].flush({ code: 20004, message: 'La quincena está cerrada.' }, { status: 409, statusText: 'Conflict' });
+
+      expect(error?.code).toBe(20004);
+      expect(auth.isAuthenticated()).toBe(true);
+    });
+
+    it('un 403 sin cuerpo del API da un mensaje genérico, no un error de código', () => {
+      let error: ApiError | undefined;
+      http.get('/api/v1/usuarios').subscribe({ error: (e) => (error = e) });
+      llamadas('/api/v1/usuarios')[0].flush('<html>', { status: 403, statusText: 'Forbidden' });
+
+      expect(error?.message).toBe('No se pudo completar la operación.');
+    });
+
     it('un 500 sin cuerpo del API se convierte en 20999', () => {
       let error: ApiError | undefined;
       http.get('/api/v1/catalogos/clientes').subscribe({ error: (e) => (error = e) });

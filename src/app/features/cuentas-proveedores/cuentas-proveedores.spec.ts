@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from './data/cuentas-proveedores.provider';
@@ -191,6 +191,33 @@ describe('Cuentas con proveedores', () => {
     expect(repo['registrarPago']).toHaveBeenCalledTimes(1);
     expect(registrado).not.toHaveBeenCalled();
     expect((raiz(f).textContent ?? '').replace(/\s+/g, ' ')).toContain('El pago supera el saldo de esa quincena (saldo $ 20.000)');
+  });
+
+  it('pago: dos envíos seguidos mientras el primero sigue en curso mandan UN solo pago', async () => {
+    const respuesta = new Subject<unknown>();
+    repo['registrarPago'].mockReturnValue(respuesta);
+    const f = await dialogoPago();
+    const form = raiz(f).querySelector('#pago-proveedor-form')!;
+    form.dispatchEvent(new Event('submit'));
+    form.dispatchEvent(new Event('submit'));
+    await estabilizar(f);
+
+    expect(repo['registrarPago']).toHaveBeenCalledTimes(1);
+    expect(boton(raiz(f), 'Guardando')!.disabled).toBe(true);
+  });
+
+  it('pago: tras un error 500 el reintento con los mismos datos usa la MISMA clave', async () => {
+    repo['registrarPago'].mockReturnValueOnce(throwError(() => ({ code: 20999, message: 'Error interno del servidor.' })));
+    const f = await dialogoPago();
+    const form = raiz(f).querySelector('#pago-proveedor-form')!;
+    form.dispatchEvent(new Event('submit'));
+    await estabilizar(f);
+    form.dispatchEvent(new Event('submit'));
+    await estabilizar(f);
+
+    expect(repo['registrarPago']).toHaveBeenCalledTimes(2);
+    const [[, primera], [, segunda]] = repo['registrarPago'].mock.calls;
+    expect(segunda).toBe(primera);
   });
 
   it('un proveedor sin saldo a crédito lo dice y no deja registrar', async () => {
