@@ -19,14 +19,17 @@ describe('ClientesCarteraTabComponent · castigar', () => {
     };
   });
 
-  async function crear(rol: Rol): Promise<ComponentFixture<ClientesCarteraTabComponent>> {
+  let repoClientes: ReturnType<typeof vi.fn>;
+
+  async function crear(rol: Rol, clientes: unknown[] = [CLIENTE]): Promise<ComponentFixture<ClientesCarteraTabComponent>> {
+    repoClientes = vi.fn(() => of({ items: clientes, total: clientes.length, page: 0, size: 10 }));
     TestBed.configureTestingModule({
       providers: [
         provideNgIconLoader(async () => ''),
         {
           provide: CARTERA_REPOSITORY,
           useValue: {
-            clientes: vi.fn(() => of({ items: [CLIENTE], total: 1, page: 0, size: 10 })),
+            clientes: repoClientes,
             resumen: vi.fn(() => of({ total_cartera: 500, clientes_con_deuda: 1, clientes_en_mora: 0, cartera_vencida: 0 })),
             ventasPendientes: vi.fn(() => of([])),
           },
@@ -41,6 +44,24 @@ describe('ClientesCarteraTabComponent · castigar', () => {
     }
     return fixture;
   }
+
+  it('«¿Desde hace cuánto me deben?» reparte la deuda por atraso y tocar un grupo filtra la lista', async () => {
+    const f = await crear('ADMIN', [CLIENTE, { ...CLIENTE, id_cliente: 6, cliente: 'Tienda Sol', saldo_deudor: 900, dias_mora: 40, estado_credito: 'EN_MORA' }]);
+    const raiz = f.nativeElement as HTMLElement;
+    const texto = (id: string) => (raiz.querySelector(`[data-testid=${id}]`)?.textContent ?? '').replace(/\s+/g, ' ');
+
+    expect(texto('edad-SIN_VENCER')).toContain('500');
+    expect(texto('edad-SIN_VENCER')).toContain('1 cliente');
+    expect(texto('edad-DE_31_A_60')).toContain('900');
+
+    repoClientes.mockClear();
+    raiz.querySelector<HTMLButtonElement>('[data-testid=edad-DE_31_A_60]')!.click();
+    for (let i = 0; i < 4; i++) {
+      f.detectChanges();
+      await f.whenStable();
+    }
+    expect(repoClientes).toHaveBeenCalledWith(expect.objectContaining({ mora_minima: 31, sort: 'dias_mora,desc' }));
+  });
 
   const botones = (f: ComponentFixture<unknown>) => Array.from((f.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('tbody button')).map((b) => b.textContent!.trim());
 

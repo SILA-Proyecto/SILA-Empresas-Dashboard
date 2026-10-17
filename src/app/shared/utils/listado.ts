@@ -50,5 +50,7 @@ export function crearListado<F extends object, T>(opciones: ListadoOpciones<F, T
     irAPagina: (indice: number) => page.set(indice),
     cambiarTamano: (tamano: number) => size.set(tamano),
     recargar: () => recurso.reload(),
+    /** The filters and sort in use, without the page: what an export needs to ask for every matching row. */
+    consulta: () => ({ ...opciones.filtros(), sort: sort() || undefined }),
   };
 }

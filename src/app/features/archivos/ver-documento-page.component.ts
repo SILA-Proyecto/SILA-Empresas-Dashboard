@@ -6,7 +6,7 @@ import { ApiErrorService } from '../../core/api/api-error';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ACCEPT_SILA, nombreDescarga, validarArchivoSila } from './archivos.logica';
 import { ARCHIVOS_REPOSITORY } from './data/archivos.provider';
-import { guardarBlob } from './guardar-archivo';
+import { guardarBlob } from '../../shared/utils/guardar-archivo';
 import { VisorArchivosService } from './visor-archivos.service';
 
 /**

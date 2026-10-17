@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
 import { AyudaComponent } from '../../shared/ui/ayuda/ayuda.component';
@@ -18,6 +18,7 @@ import { crearListado } from '../../shared/utils/listado';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from '../cuentas-proveedores/data/cuentas-proveedores.provider';
 import type { PagoProveedor, ResumenProveedorQuincena } from '../cuentas-proveedores/models/cuentas-proveedores.models';
 import { PagoProveedorDialogComponent } from '../cuentas-proveedores/pago-proveedor-dialog.component';
+import { compararQuincenas, quincenaAnterior } from './comparacion-quincena';
 import { PERIODOS_REPOSITORY } from './data/periodos.provider';
 import { explicarQuincena } from './explicacion-quincena';
 import type { Periodo } from './models/periodos.models';
@@ -79,6 +80,36 @@ interface Fila {
           }
         </ul>
       </section>
+
+      @if (comparacion(); as c) {
+        <section class="sila-card mb-6 p-5" aria-labelledby="comparacion" data-testid="comparacion">
+          <h2 id="comparacion" class="text-base font-semibold">Frente a la quincena anterior</h2>
+          <p class="mb-3 text-xs text-muted-foreground">
+            {{ c.etiquetaAnterior }}.
+            @if (p.estado === 'ABIERTA') {
+              Esta quincena aún no termina, así que las cifras todavía pueden subir.
+            }
+          </p>
+          <ul class="divide-y divide-border text-sm">
+            @for (l of c.lineas; track l.clave) {
+              <li class="py-2" [attr.data-testid]="'cambio-' + l.clave">
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="font-medium">{{ l.etiqueta }}</span>
+                  <span class="text-right tabular-nums" data-cambio [class.text-success]="l.efecto === 'mejor'" [class.text-destructive]="l.efecto === 'peor'">
+                    @if (l.efecto === 'igual') {
+                      Igual
+                    } @else {
+                      {{ l.diferencia > 0 ? '+' : '−' }}{{ cop(abs(l.diferencia)) }}{{ l.porcentaje === null ? '' : ' (' + (l.porcentaje > 0 ? '+' : '−') + numero(abs(l.porcentaje)) + ' %)' }}
+                      <span class="sr-only">{{ l.efecto === 'mejor' ? ', mejor' : ', peor' }}</span>
+                    }
+                  </span>
+                </div>
+                <p class="text-xs text-muted-foreground tabular-nums">Esta: {{ cop(l.actual) }} · Anterior: {{ cop(l.anterior) }}</p>
+              </li>
+            }
+          </ul>
+        </section>
+      }
 
       <div class="grid gap-6 lg:grid-cols-2">
         <section class="sila-card p-5" aria-labelledby="bloque-ventas">
@@ -219,6 +250,22 @@ export class CuentasQuincenaPageComponent {
     return p ? `${etiquetaQuincena(p.mes, p.quincena)} de ${p.anio}` : '';
   });
   protected readonly subtitulo = computed(() => (this.etiqueta() ? `${this.etiqueta()}: lo vendido, lo cobrado, compras a proveedores y cómo quedó la quincena.` : 'Lo vendido, lo cobrado, compras a proveedores y cómo quedó la quincena.'));
+
+  /** The quincenas of this year and the one before, to find the one right before this one. */
+  private readonly vecinas = rxResource({
+    params: () => (this.periodo.hasValue() ? this.periodo.value().anio : undefined),
+    stream: ({ params: anio }) =>
+      forkJoin([this.repo.listar({ anio, page: 0, size: 50 }), this.repo.listar({ anio: anio - 1, page: 0, size: 50 }).pipe(catchError(() => of(null)))]).pipe(
+        map(([este, previo]) => [...este.items, ...(previo?.items ?? [])]),
+      ),
+  });
+  protected readonly comparacion = computed(() => {
+    if (!this.periodo.hasValue() || !this.vecinas.hasValue()) return null;
+    const actual = this.periodo.value();
+    const anterior = quincenaAnterior(actual, this.vecinas.value());
+    return anterior ? { lineas: compararQuincenas(actual, anterior), etiquetaAnterior: `${etiquetaQuincena(anterior.mes, anterior.quincena)} de ${anterior.anio}` } : null;
+  });
+  protected readonly abs = Math.abs;
 
   protected readonly verProveedores = signal(false);
   protected readonly explicacion = computed(() => (this.periodo.hasValue() ? explicarQuincena(this.periodo.value()) : []));

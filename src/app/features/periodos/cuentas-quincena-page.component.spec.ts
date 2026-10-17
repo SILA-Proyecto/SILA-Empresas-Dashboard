@@ -33,13 +33,13 @@ describe('CuentasQuincenaPageComponent', () => {
 
   const LINEA = { id_periodo: 19, anio: 2026, mes: 10, quincena: 1, id_proveedor: 3, proveedor: 'Finca La Pradera', numero_compras: 2, valor_compras: 500000, valor_pagado: 300000, saldo: 200000 };
 
-  async function crear(periodo: Periodo, lineas: unknown[] = []): Promise<ComponentFixture<CuentasQuincenaPageComponent>> {
+  async function crear(periodo: Periodo, lineas: unknown[] = [], todas: Periodo[] = [periodo]): Promise<ComponentFixture<CuentasQuincenaPageComponent>> {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideNgIconLoader(async () => ''),
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: '19' }) }, paramMap: of(convertToParamMap({ id: '19' })) } },
-        { provide: PERIODOS_REPOSITORY, useValue: { obtener: vi.fn(() => of(periodo)) } },
+        { provide: PERIODOS_REPOSITORY, useValue: { obtener: vi.fn(() => of(periodo)), listar: vi.fn((q: { anio: number }) => of({ items: todas.filter((p) => p.anio === q.anio), total: 0, page: 0, size: 50 })) } },
         { provide: CUENTAS_PROVEEDORES_REPOSITORY, useValue: { resumen: vi.fn(() => of({ items: lineas, total: lineas.length, page: 0, size: 10 })) } },
       ],
     });
@@ -96,5 +96,27 @@ describe('CuentasQuincenaPageComponent', () => {
     const pagar = Array.from((f.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => b.textContent?.includes('Pagar'))!;
     expect(pagar).toBeDefined();
     expect(pagar.disabled).toBe(false);
+  });
+
+  it('compara con la quincena anterior (también la del año pasado) y marca lo que mejoró y lo que empeoró', async () => {
+    const anterior: Periodo = { ...PERIODO, id_periodo: 18, anio: 2025, mes: 12, quincena: 2, fecha_inicio: '2025-12-16', fecha_fin: '2025-12-31', estado: 'CERRADA', ingresos_ventas: 800000, total_cobrado: 500000, gastos_operativos: 100000, resultado_estimado: 600000, caja_neta: -300000 };
+    const f = await crear({ ...PERIODO, anio: 2026, mes: 1, quincena: 1, fecha_inicio: '2026-01-01' }, [], [anterior]);
+    const fila = (clave: string) => texto(f, `[data-testid=cambio-${clave}]`);
+
+    expect(texto(f, '#comparacion + p')).toContain('Diciembre · 2.ª quincena de 2025');
+    expect(texto(f, '#comparacion + p')).toContain('aún no termina');
+    expect(fila('ventas')).toContain('+$ 200.000 (+25 %)');
+    expect(fila('cobrado')).toContain('Igual');
+    expect(fila('gastos')).toContain('+$ 50.000');
+    expect(fila('resultado')).toContain('−$ 100.000 (−16,7 %)');
+    expect(fila('caja')).toContain('+$ 80.000');
+    const clases = (clave: string) => (f.nativeElement as HTMLElement).querySelector(`[data-testid=cambio-${clave}] [data-cambio]`)!.className;
+    expect(clases('ventas')).toContain('text-success');
+    expect(clases('gastos')).toContain('text-destructive');
+  });
+
+  it('sin quincena anterior creada no muestra la comparación', async () => {
+    const f = await crear(PERIODO);
+    expect((f.nativeElement as HTMLElement).querySelector('[data-testid=comparacion]')).toBeNull();
   });
 });

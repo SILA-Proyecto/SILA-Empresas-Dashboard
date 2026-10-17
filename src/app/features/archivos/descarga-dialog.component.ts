@@ -7,7 +7,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { nombreDescarga, tituloArchivo, validarClaveEscrita } from './archivos.logica';
 import { ARCHIVOS_REPOSITORY } from './data/archivos.provider';
-import { guardarBlob } from './guardar-archivo';
+import { guardarBlob } from '../../shared/utils/guardar-archivo';
 import type { Archivo, ModoClave } from './models/archivos.models';
 
 /**

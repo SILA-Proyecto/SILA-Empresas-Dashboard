@@ -2,16 +2,20 @@ import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/fil
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
 import { ServerDataTableComponent } from '../../shared/ui/server-data-table/server-data-table.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatoCop, formatoNumero } from '../../shared/utils/formato-co';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
+import type { ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { AbonoDialogComponent } from './abono-dialog.component';
 import { CastigoDialogComponent } from './castigo-dialog.component';
+import { EdadesCarteraComponent } from './edades-cartera.component';
 import { ESTADOS_CREDITO, chipEstadoCredito } from './cartera.format';
 import { CARTERA_REPOSITORY } from './data/cartera.provider';
 import type { CastigoResultado, ClienteCartera, EstadoCredito } from './models/cartera.models';
@@ -20,7 +24,7 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
 @Component({
   selector: 'app-clientes-cartera-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FiltrosPlegablesComponent, AbonoDialogComponent, CastigoDialogComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent, VentasPendientesDialogComponent],
+  imports: [BotonCsvComponent, FiltrosPlegablesComponent, AbonoDialogComponent, CastigoDialogComponent, EdadesCarteraComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent, VentasPendientesDialogComponent],
   template: `
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div class="sila-card p-4">
@@ -43,6 +47,12 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
     @if (resumen.error()) {
       <p class="-mt-3 mb-4 text-sm text-destructive" role="alert">No se pudo cargar el resumen. <button type="button" class="underline" (click)="resumen.reload()">Reintentar</button></p>
     }
+
+    <div class="mb-4 flex justify-end">
+      <app-boton-csv nombre="cartera-clientes" [columnas]="columnasCsv" [cargar]="todos" />
+    </div>
+
+    <app-edades-cartera [version]="version()" (elegir)="filtrarPorMora($event)" />
 
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
@@ -126,6 +136,9 @@ export class ClientesCarteraTabComponent {
   protected readonly mora = signal('');
   protected readonly soloConDeuda = signal(true);
 
+  /** Goes up after a payment or write-off so the aging figures are asked for again. */
+  protected readonly version = signal(0);
+
   protected readonly abonando = signal<ClienteCartera | null>(null);
   protected readonly viendo = signal<ClienteCartera | null>(null);
   protected readonly castigando = signal<ClienteCartera | null>(null);
@@ -151,9 +164,27 @@ export class ClientesCarteraTabComponent {
     { key: 'estado_credito', label: 'Estado', value: (c) => c.estado_credito },
     { key: 'acciones', label: 'Acciones', sortable: false, value: () => '' },
   ];
+  protected readonly columnasCsv: ColumnaCsv<ClienteCartera>[] = [
+    { titulo: 'Cliente', valor: (c) => c.cliente },
+    { titulo: 'Teléfono', valor: (c) => c.telefono },
+    { titulo: 'Límite de crédito', valor: (c) => c.limite_credito },
+    { titulo: 'Deuda', valor: (c) => c.saldo_deudor },
+    { titulo: 'Cupo disponible', valor: (c) => c.cupo_disponible },
+    { titulo: 'Días de mora', valor: (c) => c.dias_mora },
+    { titulo: 'Estado', valor: (c) => chipEstadoCredito(c.estado_credito).texto },
+  ];
+  /** Every client that matches the filters on screen (not only the page shown). */
+  protected readonly todos = () => todasLasPaginas((q) => this.repo.clientes({ ...this.listado.consulta(), ...q }));
   protected readonly clienteId = (c: ClienteCartera) => c.id_cliente;
 
+  protected filtrarPorMora(desde: number): void {
+    this.mora.set(desde > 0 ? String(desde) : '');
+    this.soloConDeuda.set(true);
+    this.listado.sort.set(desde > 0 ? 'dias_mora,desc' : 'saldo_deudor,desc');
+  }
+
   protected recargar(): void {
+    this.version.update((v) => v + 1);
     this.listado.recargar();
     this.resumen.reload();
   }

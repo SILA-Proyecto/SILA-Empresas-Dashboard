@@ -4,7 +4,7 @@ import { ApiErrorService } from '../../core/api/api-error';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { ARCHIVOS_REPOSITORY } from './data/archivos.provider';
 import { esImagen, esPdf, nombreDescarga } from './archivos.logica';
-import { guardarBlob } from './guardar-archivo';
+import { guardarBlob } from '../../shared/utils/guardar-archivo';
 import type { RespuestaArchivo } from '../../core/api/archivo-cabeceras';
 
 /** What the viewer dialogs show. Only `blob:` URLs made here, and only for `<img>` or an `Abrir` link: never inside the page. */

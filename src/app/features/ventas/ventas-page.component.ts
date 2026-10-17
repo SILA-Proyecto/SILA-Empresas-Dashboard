@@ -6,8 +6,11 @@ import type { DataTableColumn } from '../../shared/ui/data-table/data-table.mode
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { ServerDataTableComponent } from '../../shared/ui/server-data-table/server-data-table.component';
+import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { formatoCop, formatoFecha } from '../../shared/utils/formato-co';
+import { todasLasPaginas } from '../../core/api/todas-las-paginas';
+import type { ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
@@ -20,13 +23,16 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
 @Component({
   selector: 'app-ventas-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent, VerComprobanteComponent],
+  imports: [BotonCsvComponent, FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent, VerComprobanteComponent],
   template: `
     <app-page-header title="Historial de ventas" description="Consulta las ventas registradas, su detalle y, si eres administrador, anúlalas.">
-      <a routerLink="/ventas/nueva" class="sila-btn sila-btn-primary shrink-0">
-        <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
-        Nueva venta
-      </a>
+      <div class="flex flex-wrap gap-2">
+        <app-boton-csv nombre="ventas" [columnas]="columnasCsv" [cargar]="todas" />
+        <a routerLink="/ventas/nueva" class="sila-btn sila-btn-primary shrink-0">
+          <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
+          Nueva venta
+        </a>
+      </div>
     </app-page-header>
 
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
@@ -135,6 +141,20 @@ export class VentasPageComponent {
     { key: 'estado_pago', label: 'Estado', value: (v) => v.estado_pago },
     { key: 'acciones', label: 'Detalle', sortable: false, value: () => '' },
   ];
+  protected readonly columnasCsv: ColumnaCsv<Venta>[] = [
+    { titulo: 'N.º', valor: (v) => v.id_venta },
+    { titulo: 'Fecha', valor: (v) => v.fecha_venta },
+    { titulo: 'Cliente', valor: (v) => v.cliente },
+    { titulo: 'Documento', valor: (v) => v.numero_documento },
+    { titulo: 'Tipo', valor: (v) => etiquetaTipoVenta(v.tipo_venta) },
+    { titulo: 'Subtotal', valor: (v) => v.subtotal_venta },
+    { titulo: 'IVA', valor: (v) => v.total_iva },
+    { titulo: 'Total', valor: (v) => v.total_venta },
+    { titulo: 'Saldo pendiente', valor: (v) => v.saldo_pendiente },
+    { titulo: 'Estado', valor: (v) => chipEstadoPago(v.estado_pago).texto },
+  ];
+  /** Every sale that matches the filters on screen (not only the page shown). */
+  protected readonly todas = () => todasLasPaginas((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
   protected readonly ventaId = (v: Venta) => v.id_venta;
 
   protected limpiar(): void {
