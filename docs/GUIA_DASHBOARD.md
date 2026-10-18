@@ -1,6 +1,6 @@
 # Guía del dashboard SILA (para el asistente de ayuda)
 
-Esta guía describe el dashboard tal como lo ven los usuarios. Actualizada el 2026-10-17. Los nombres entre «comillas» son los textos exactos de la pantalla. Si algo no está aquí, el asistente debe decir que no lo sabe en vez de inventarlo.
+Esta guía describe el dashboard tal como lo ven los usuarios. Actualizada el 2026-10-18. Los nombres entre «comillas» son los textos exactos de la pantalla. Si algo no está aquí, el asistente debe decir que no lo sabe en vez de inventarlo.
 
 Reglas para responder: explicar solo lo que el rol de la persona puede ver; dar la ruta como «Menú → Pantalla → Pestaña → Botón»; el dinero siempre es en pesos colombianos (COP).
 
@@ -49,7 +49,7 @@ Lista todos los movimientos de plata: ventas, abonos, pagos a proveedores, compr
 ### Cartera
 Lo que los clientes deben por ventas a crédito. Tres pestañas:
 - «Clientes con deuda»: por cliente muestra Límite, Deuda, Cupo disponible, Mora (días) y Estado. Botones: «Registrar abono», «Ver ventas», «Historial de abonos» y (ADMIN) «Dar por perdida la deuda».
-- «Por edades»: reparte lo que se debe por días de mora: «Al día (no vencida)», 1 a 15, 16 a 30, 31 a 60 y más de 60 días. Tocar un rango ordena la tabla por esa columna. Cada cliente tiene «Ver ventas».
+- «Por edades»: reparte lo que se debe por días de mora en cinco tarjetas: «Al dia (no vencida)», «Mora de 1 a 15 dias», «Mora de 16 a 30 dias», «Mora de 31 a 60 dias» y «Mora de mas de 60 dias» (los rótulos vienen del servidor, sin tildes). Tocar un rango ordena la tabla por esa columna. Cada cliente tiene «Ver ventas».
 - «Abonos»: historial de pagos recibidos.
 
 **Registrar un abono:** Cartera → «Clientes con deuda» → «Registrar abono» en la fila del cliente → elige «Medio», escribe el «Monto» (o «Toda la deuda»), opcional «Referencia» → «Registrar abono». El pago se aplica primero a la venta más antigua. No puede superar la deuda del cliente. Después sale «Imprimir recibo».
@@ -95,10 +95,10 @@ Cada quincena es un candado. «Crear períodos de un año» crea las 24 quincena
 Solo consulta: lo que ganó cada quincena (ventas sin IVA menos costo de producción, gastos y cartera castigada) y la plata que realmente entró y salió (caja). Se cambia de quincena con «Anterior» y «Siguiente». Los dos roles ven las mismas cifras.
 
 ### Margen de ganancia (ADMIN)
-Cuánto se gana: lo vendido sin IVA menos el costo promedio de producir lo vendido. Es un cálculo ESTIMADO (no se sabe de qué lote salió cada unidad). Se elige el rango de fechas (atajos «Este mes», «Mes pasado», «Esta quincena», «Quincena anterior», «Últimos 30 días») y en «Ver por» se elige «Producto» o «Cliente». Resalta los márgenes bajos o negativos. Si algún producto no tiene producción registrada avisa «N líneas sin costo».
+Cuánto se gana: lo vendido sin IVA menos el costo promedio de producir lo vendido. Es un cálculo ESTIMADO (no se sabe de qué lote salió cada unidad). Se elige el rango de fechas (atajos «Este mes», «Mes pasado», «Esta quincena», «Quincena anterior», «Últimos 30 días») y en «Ver por» se elige «Producto» o «Cliente». Resalta los márgenes bajos o negativos. Si algún producto no tiene producción registrada avisa «N líneas de venta sin costo» (producto sin producción registrada: su venta cuenta en «Vendido», pero no en el costo ni en la ganancia).
 
 ### Archivos
-Pestañas: «Archivos» y «Ver documento»; el ADMIN además «Drive» y «Accesos». Guarda los PDF de los comprobantes y los archivos de la empresa: «Ver», «Descargar con clave» y «Detalle». El ADMIN puede «Subir archivo», «Nueva carpeta» (máximo 5 niveles; no se renombran ni se mueven) y «Archivar» (no borra). **El OPERATIVO solo ve los comprobantes que genera la aplicación**, no lo que sube el ADMIN.
+Pestañas: «Archivos» y «Ver documento»; el ADMIN además «Drive» y «Accesos». «Ver documento» sirve para abrir un archivo que se bajó de Google Drive (termina en .sila): se arrastra o se elige con «Elegir archivo .sila» y se muestra descifrado. «Drive» (ADMIN) conecta o desconecta la copia cifrada de respaldo en Google Drive («Conectar con Google Drive», «Desconectar»); si el servidor no lo tiene configurado dice «Drive no está configurado en el servidor.». «Accesos» (ADMIN) es la bitácora de quién vio, descargó o subió archivos. Guarda los PDF de los comprobantes y los archivos de la empresa: «Ver», «Descargar con clave» y «Detalle». El ADMIN puede «Subir archivo», «Nueva carpeta» (máximo 5 niveles; no se renombran ni se mueven) y «Archivar» (no borra). **El OPERATIVO solo ve los comprobantes que genera la aplicación**, no lo que sube el ADMIN.
 
 ### Catálogos
 Pestañas «Clientes», «Proveedores» y «Productos».
