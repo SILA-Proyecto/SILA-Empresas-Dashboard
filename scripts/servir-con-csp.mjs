@@ -5,22 +5,33 @@
  * buscando violaciones de la política antes de pedirle al servidor web que la aplique. Sin dependencias.
  *
  *   npx ng build
- *   node scripts/servir-con-csp.mjs                 # http://localhost:4300 → API en http://localhost:8080
- *   node scripts/servir-con-csp.mjs --report-only   # la CSP solo avisa, no bloquea
+ *   node scripts/servir-con-csp.mjs                       # SILA_EMPRESAS: http://127.0.0.1:4301 → su backend (puerto del registro)
+ *   node scripts/servir-con-csp.mjs SILA_PRUEBA_DOS       # esa empresa: http://127.0.0.2:4301 → su backend
+ *   node scripts/servir-con-csp.mjs --report-only         # la CSP solo avisa, no bloquea
  *
- * Variables: PUERTO (4300), BACKEND (http://localhost:8080), ORIGEN_BACKEND (http://localhost:4200).
- *   ORIGEN_BACKEND: el backend solo acepta /auth/refresh y /auth/logout desde el origen del dashboard
- *   que tiene configurado (:4200); al servir en otro puerto hay que presentarse con ese origen.
+ * La empresa sale del registro del backend (scripts/empresas.mjs; se niegan LLANOLAT, las inactivas y los puertos 8080/4200).
+ * Variables: PUERTO (4301), HOST (el de la empresa), BACKEND y ORIGEN_BACKEND (para forzar otros valores).
+ *   ORIGEN_BACKEND: el backend solo acepta /auth/refresh y /auth/logout desde el origen de SU dashboard (el del registro);
+ *   como aquí se sirve en otro puerto hay que presentarse con ese origen.
  */
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import http from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ESQUEMA_DEFECTO, ErrorEmpresa, RUTA_REGISTRO, elegirEmpresa, parsearRegistro } from './empresas.mjs';
 
 const RAIZ = resolve(fileURLToPath(new URL('..', import.meta.url)), 'dist/dashboard-app/browser');
-const PUERTO = Number(process.env.PUERTO ?? 4300);
-const BACKEND = new URL(process.env.BACKEND ?? 'http://localhost:8080');
-const ORIGEN_BACKEND = process.env.ORIGEN_BACKEND ?? 'http://localhost:4200';
+let empresa;
+try {
+  empresa = elegirEmpresa(parsearRegistro(readFileSync(RUTA_REGISTRO, 'utf8')), process.argv.slice(2).find((a) => !a.startsWith('--')) ?? ESQUEMA_DEFECTO);
+} catch (error) {
+  console.error(`✖ ${error instanceof ErrorEmpresa ? error.message : `No pude leer el registro de empresas (${RUTA_REGISTRO}).`}`);
+  process.exit(1);
+}
+const PUERTO = Number(process.env.PUERTO ?? 4301);
+const HOST = process.env.HOST ?? empresa.host;
+const BACKEND = new URL(process.env.BACKEND ?? `http://127.0.0.1:${empresa.puertoBackend}`);
+const ORIGEN_BACKEND = process.env.ORIGEN_BACKEND ?? empresa.origen;
 const SOLO_AVISAR = process.argv.includes('--report-only');
 
 const CSP = [
@@ -62,6 +73,12 @@ http
   .createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
 
+    // Marca del entorno (solo empresas de prueba), como la da el proxy de `npm run empresa` en desarrollo.
+    if (url.pathname === '/entorno.json' && empresa.prueba) {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CABECERAS }).end('{"marca":"pruebas"}');
+      return;
+    }
+
     // /api → backend (mismo origen para el navegador, como detrás del proxy inverso de producción)
     if (url.pathname.startsWith('/api/')) {
       const cabeceras = { ...req.headers, host: BACKEND.host, origin: ORIGEN_BACKEND };
@@ -92,7 +109,7 @@ http
     });
     createReadStream(archivo).pipe(res);
   })
-  .listen(PUERTO, () => {
-    console.log(`SILA con CSP${SOLO_AVISAR ? ' (solo avisa)' : ''}: http://localhost:${PUERTO}  →  /api = ${BACKEND.origin}`);
+  .listen(PUERTO, HOST, () => {
+    console.log(`SILA con CSP${SOLO_AVISAR ? ' (solo avisa)' : ''} · ${empresa.esquema}: http://${HOST}:${PUERTO}  →  /api = ${BACKEND.origin}`);
     console.log(`Política: ${CSP}`);
   });

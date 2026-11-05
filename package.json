@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "empresa": "node scripts/empresa.mjs",
+    "empresa:parar": "node scripts/empresa.mjs --parar",
+    "test:scripts": "node --test scripts/*.test.mjs",
+    "licencias": "node scripts/generar-licencias.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.8",
@@ -20,6 +24,8 @@
     "@angular/router": "^22.2.2",
     "@ng-icons/core": "^35.0.1",
     "@ng-icons/lucide": "^35.0.1",
+    "@ng-icons/phosphor-icons": "^35.0.1",
+    "@ng-icons/tabler-icons": "^35.0.1",
     "@tailwindcss/postcss": "^4.3.3",
     "apexcharts": "^6.10.0",
     "ng-apexcharts": "^3.0.0",

@@ -80,6 +80,8 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "proxyConfig": "proxy.conf.json",
+            "port": 4300,
+            "host": "127.0.0.1",
         "allowedHosts": [".ngrok-free.dev", ".ngrok-free.app"]
           },
           "configurations": {

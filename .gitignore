@@ -69,3 +69,10 @@ docs/LIMPIEZA.md
 *.dump
 capturas/
 screenshots/
+
+# Proxies temporales por empresa (generados por scripts/empresa.mjs)
+/.empresas
+
+# Material local que no se publica (no forma parte del funcionamiento)
+docs/
+ESTADO_EMPRESAS.md
