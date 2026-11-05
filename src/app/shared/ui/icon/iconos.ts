@@ -1,6 +1,7 @@
 /**
  * The Lucide icons the app really uses (named imports, so the bundler drops the other ~1,900). To use a new icon, add it here:
- * `IconName` is derived from this list, so naming an icon that is not here is a compile error.
+ * `IconName` is derived from this list, so naming an icon that is not here is a compile error. Every icon also needs its
+ * look-alike in `iconos-tabler.ts` and `iconos-phosphor.ts` (the other styles of the theme customizer): it does not compile without it.
  */
 import {
   lucideX,
@@ -12,9 +13,11 @@ import {
   lucideBanknote,
   lucideBell,
   lucideBellRing,
+  lucideBuilding2,
   lucideCalendarPlus,
   lucideCalendarRange,
   lucideChartColumn,
+  lucideCheck,
   lucideChevronDown,
   lucideChevronLeft,
   lucideChevronRight,
@@ -41,6 +44,7 @@ import {
   lucideHandCoins,
   lucideHandshake,
   lucideHistory,
+  lucideImageOff,
   lucideInfo,
   lucideKeyRound,
   lucideLayoutDashboard,
@@ -58,12 +62,14 @@ import {
   lucideMoon,
   lucidePackage,
   lucidePackagePlus,
+  lucidePalette,
   lucidePencil,
   lucidePlus,
   lucidePower,
   lucidePrinter,
   lucideReceipt,
   lucideRefreshCw,
+  lucideRotateCcw,
   lucideScanBarcode,
   lucideSend,
   lucideScanFace,
@@ -89,7 +95,6 @@ import {
   lucideUsers,
   lucideWallet,
   lucideWarehouse,
-  lucideZap,
 } from '@ng-icons/lucide';
 
 export const ICONOS = {
@@ -102,9 +107,11 @@ export const ICONOS = {
   lucideBanknote,
   lucideBell,
   lucideBellRing,
+  lucideBuilding2,
   lucideCalendarPlus,
   lucideCalendarRange,
   lucideChartColumn,
+  lucideCheck,
   lucideChevronDown,
   lucideChevronLeft,
   lucideChevronRight,
@@ -131,6 +138,7 @@ export const ICONOS = {
   lucideHandCoins,
   lucideHandshake,
   lucideHistory,
+  lucideImageOff,
   lucideInfo,
   lucideKeyRound,
   lucideLayoutDashboard,
@@ -148,12 +156,14 @@ export const ICONOS = {
   lucideMoon,
   lucidePackage,
   lucidePackagePlus,
+  lucidePalette,
   lucidePencil,
   lucidePlus,
   lucidePower,
   lucidePrinter,
   lucideReceipt,
   lucideRefreshCw,
+  lucideRotateCcw,
   lucideScanBarcode,
   lucideSend,
   lucideScanFace,
@@ -179,5 +189,4 @@ export const ICONOS = {
   lucideUsers,
   lucideWallet,
   lucideWarehouse,
-  lucideZap,
 } as const;

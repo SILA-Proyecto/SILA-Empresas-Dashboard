@@ -32,7 +32,7 @@
 
 <app-server-data-table
   titulo="Clientes"
-  [columns]="columnas"
+  [columns]="columnas()"
   [page]="listado.datos()"
   [rowId]="clienteId"
   [cargando]="listado.cargando()"

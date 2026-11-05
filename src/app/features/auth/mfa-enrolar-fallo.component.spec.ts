@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { MfaEnrolarComponent } from './mfa-enrolar.component';
 
@@ -7,7 +8,7 @@ vi.mock('qrcode', () => ({ toDataURL: () => Promise.reject(new Error('sin canvas
 
 describe('MfaEnrolarComponent · falla la librería del QR', () => {
   it('avisa y deja abierta la clave para escribirla a mano', async () => {
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => '')] });
+    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([])] });
     const fixture = TestBed.createComponent(MfaEnrolarComponent);
     fixture.componentRef.setInput('config', { secreto: 'JBSWY3DPEHPK3PXP', otpauth_uri: 'otpauth://totp/SILA:ana?secret=JBSWY3DPEHPK3PXP' });
     for (let i = 0; i < 6; i++) {

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, e
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService, isApiError } from '../../../core/api/api-error';
+import { AvisoLegalComponent } from '../../../shared/ui/aviso-legal/aviso-legal.component';
 import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
 import { SilaValidators, limpiarTexto } from '../../../shared/validators/sila-validators';
@@ -11,7 +12,7 @@ import { Proveedor, ProveedorGuardar, TIPOS_DOCUMENTO, TipoDocumento } from '../
 @Component({
   selector: 'app-proveedor-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [AvisoLegalComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule],
   templateUrl: './proveedor-form-dialog.component.html',
 })
 export class ProveedorFormDialogComponent {

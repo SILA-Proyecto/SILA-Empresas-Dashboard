@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, booleanAttribute, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, inject, input } from '@angular/core';
 import { NgIcon } from '@ng-icons/core';
+import { type IconStyle, ThemeService } from '../../../layout/services/theme.service';
 import type { ICONOS } from './iconos';
 
 /**
@@ -14,6 +15,8 @@ export type IconName = keyof typeof ICONOS;
  *
  * Sizing and colour come from the classes on the host (`h-4 w-4`,
  * `text-muted-foreground`, ...) — the icon stretches to fill the host box.
+ * The style chosen in the theme customizer (Lucide, Tabler or Phosphor) goes in the name the loader receives
+ * (`cargar-icono.ts`), so changing it redraws every icon.
  * Lucide icons are stroked outlines with `fill="none"`; `filled` paints the
  * glyph in the current colour instead (a starred item, for example).
  */
@@ -22,7 +25,7 @@ export type IconName = keyof typeof ICONOS;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgIcon],
-  template: `<ng-icon [name]="name()" />`,
+  template: `<ng-icon [name]="nombreCargado()" />`,
   styles: `
     /* Layered so Tailwind display utilities (hidden, block, ...) can still override it. */
     @layer components {
@@ -46,4 +49,13 @@ export type IconName = keyof typeof ICONOS;
 export class IconComponent {
   readonly name = input.required<IconName>();
   readonly filled = input(false, { transform: booleanAttribute });
+
+  /** Forces one style (the previews of the theme customizer); without it, the person's choice. */
+  readonly estilo = input<IconStyle | null>(null);
+
+  private readonly theme = inject(ThemeService);
+  protected readonly nombreCargado = computed(() => {
+    const estilo = this.estilo() ?? this.theme.iconStyle();
+    return estilo === 'lucide' ? this.name() : `${estilo}:${this.name()}`;
+  });
 }

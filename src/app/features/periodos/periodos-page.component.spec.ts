@@ -5,6 +5,9 @@ import { of, throwError } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { CUENTAS_EN_CERO } from './testing/periodo.fixture';
+import { MODULOS_OPCIONALES } from '../../core/empresa/empresa.models';
+import { EmpresaService } from '../../core/empresa/empresa.service';
+import { crearEmpresaFalsa, provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 import { PERIODOS_REPOSITORY } from './data/periodos.provider';
 import type { Periodo } from './models/periodos.models';
 import { PeriodosPageComponent } from './periodos-page.component';
@@ -58,7 +61,7 @@ describe('PeriodosPageComponent', () => {
   beforeEach(() => {
     repo = crearRepo();
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideNgIconLoader(async () => ''), { provide: PERIODOS_REPOSITORY, useValue: repo }],
+      providers: [provideRouter([]), provideNgIconLoader(async () => ''), provideEmpresaFalsa(), { provide: PERIODOS_REPOSITORY, useValue: repo }],
     });
   });
 
@@ -101,6 +104,35 @@ describe('PeriodosPageComponent', () => {
       expect(botonesDeFila(fixture, 'Cerrar').length).toBe(0);
       expect(botonesDeFila(fixture, 'Reabrir').length).toBe(0);
       expect(botonPorTexto(raiz(fixture), 'Crear períodos de un año')).toBeUndefined();
+    });
+  });
+
+  describe('módulo RESULTADO_QUINCENA', () => {
+    const encabezados = (fixture: ComponentFixture<unknown>) => Array.from(raiz(fixture).querySelectorAll('thead th')).map((th) => th.textContent?.trim() ?? '');
+
+    it('encendido: las columnas del resultado y de la caja, y se puede ordenar por resultado', async () => {
+      const fixture = await crear('ADMIN');
+
+      expect(encabezados(fixture)).toEqual(expect.arrayContaining([expect.stringContaining('Ingresos'), expect.stringContaining('Resultado estimado'), expect.stringContaining('Caja neta')]));
+    });
+
+    it('apagado: sin columnas del resultado ni de la caja (el backend las manda en null) y sin $0; las cuentas, cerrar y reabrir siguen', async () => {
+      TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'RESULTADO_QUINCENA')) });
+      const nulos = { ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null };
+      const filas = FILAS.map((p) => ({ ...p, ...nulos, por_pagar_proveedores: 1500 }));
+      repo.listar.mockReturnValue(of({ items: filas, total: filas.length, page: 0, size: 50 }));
+      const fixture = await crear('ADMIN');
+      const columnas = encabezados(fixture).join(' | ');
+
+      for (const fuera of ['Ingresos', 'Costo de producción', 'Gastos', 'Cartera castigada', 'Resultado estimado', 'Caja neta']) expect(columnas).not.toContain(fuera);
+      expect(columnas).toContain('Por pagar a proveedores');
+      expect(raiz(fixture).querySelector('tbody')!.textContent).not.toMatch(/\$\s?0(?![\d.])/);
+      expect(raiz(fixture).textContent).toContain('Mostrar leche por pagar');
+      expect(raiz(fixture).textContent).not.toContain('Mostrar leche por pagar y caja');
+      expect(botonesDeFila(fixture, 'Cerrar').length).toBe(2);
+      expect(botonesDeFila(fixture, 'Reabrir').length).toBe(1);
+      // The list is never asked for in result order (the backend answers 20020 to that).
+      for (const [consulta] of repo.listar.mock.calls as unknown as [{ sort?: string }][]) expect(consulta.sort ?? '').not.toContain('resultado_estimado');
     });
   });
 

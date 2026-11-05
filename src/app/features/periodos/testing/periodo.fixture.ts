@@ -1,8 +1,8 @@
-import type { Periodo } from '../models/periodos.models';
+import type { PeriodoConResultado } from '../con-resultado';
 
 /** The account fields of a quincena, all in zero: spread it under the fields a test cares about. */
 export const CUENTAS_EN_CERO: Pick<
-  Periodo,
+  PeriodoConResultado,
   | 'iva_ventas' | 'total_vendido' | 'ventas_contado' | 'ventas_credito' | 'cobrado_contado' | 'cobrado_abonos' | 'total_cobrado'
   | 'cartera_pendiente' | 'leche_litros' | 'leche_litros_rechazados' | 'leche_comprada' | 'compras_materias_primas'
   | 'compras_contado' | 'compras_credito' | 'pagado_proveedores' | 'por_pagar_proveedores' | 'pagos_proveedores_caja' | 'caja_neta'

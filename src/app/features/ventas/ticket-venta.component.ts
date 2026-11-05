@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import type { AnchoPapel } from '../../shared/services/papel-ticket.service';
 import { formatoCop, formatoFecha, formatoFechaHora, formatoNumero } from '../../shared/utils/formato-co';
 import type { VentaDetalle } from './models/ventas.models';
@@ -22,7 +23,7 @@ import { etiquetaMetodo, etiquetaTipoVenta } from './ventas.format';
       data-testid="ticket"
     >
       <header class="text-center">
-        <p class="ticket-titulo font-bold uppercase tracking-wide">Llanolat</p>
+        <p class="ticket-titulo font-bold uppercase tracking-wide">{{ nombreEmpresa() }}</p>
         <p>Ticket de venta</p>
       </header>
 
@@ -93,6 +94,10 @@ import { etiquetaMetodo, etiquetaTipoVenta } from './ventas.format';
   `,
 })
 export class TicketVentaComponent {
+  private readonly empresa = inject(EmpresaService);
+  /** Name of the company on the paper (from the company data, never written by hand). */
+  protected readonly nombreEmpresa = computed(() => this.empresa.nombre() ?? 'SILA');
+
   readonly detalle = input.required<VentaDetalle>();
   /** Width of the paper roll in mm. */
   readonly ancho = input<AnchoPapel>(80);

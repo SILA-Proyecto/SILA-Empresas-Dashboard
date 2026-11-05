@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
@@ -82,7 +83,7 @@ function mayorQueCero(control: AbstractControl): ValidationErrors | null {
           }
 
           <!-- Campos exclusivos de calidad para leche -->
-          @if (esLeche()) {
+          @if (esLeche() && calidadActiva()) {
             <div class="sm:col-span-2 rounded-lg border border-border/80 bg-muted/40 p-3 space-y-3">
               <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Control de calidad de la leche</p>
               <div class="grid gap-3 sm:grid-cols-2">
@@ -169,6 +170,7 @@ export class CompraDialogComponent {
   private readonly acopioRepo = inject(ACOPIO_REPOSITORY);
   private readonly cuentasRepo = inject(CUENTAS_PROVEEDORES_REPOSITORY);
   private readonly auth = inject(AuthService);
+  private readonly empresa = inject(EmpresaService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -202,8 +204,11 @@ export class CompraDialogComponent {
   protected readonly errorInsumo = computed(() => (this.insumoTocado() && this.insumo() === null ? 'Elige la materia prima.' : null));
   protected readonly errorProveedor = computed(() => (this.insumoTocado() && this.esLeche() && this.proveedor() === null ? 'El proveedor es obligatorio para la leche.' : null));
 
-  /** Umbrales de calidad para la leche */
-  protected readonly umbrales = rxResource({ stream: () => this.acopioRepo.umbrales() });
+  /** Without the milk-quality module there is no temperature, acidity or threshold: the delivery enters as approved. */
+  protected readonly calidadActiva = computed(() => this.empresa.activo('CALIDAD_LECHE'));
+
+  /** Umbrales de calidad para la leche (only asked for when the module is on: otherwise the backend answers 20020) */
+  protected readonly umbrales = rxResource({ params: () => (this.calidadActiva() ? true : undefined), stream: () => this.acopioRepo.umbrales() });
 
   /** Consulta de precio pactado vigente para la combinación proveedor + insumo */
   private readonly precioPactadoRecurso = rxResource({
@@ -325,7 +330,7 @@ export class CompraDialogComponent {
       }
       const vTemp = this.form.controls.temperatura.value;
       const vAcid = this.form.controls.acidez.value;
-      if (vTemp === null || vTemp === ('' as unknown as number) || vAcid === null || vAcid === ('' as unknown as number)) {
+      if (this.calidadActiva() && (vTemp === null || vTemp === ('' as unknown as number) || vAcid === null || vAcid === ('' as unknown as number))) {
         this.errorGeneral.set('Para la leche, la temperatura y la acidez son obligatorias.');
         this.enfocarError();
         return;
@@ -357,7 +362,7 @@ export class CompraDialogComponent {
       ...(proveedor === null && compradoEn ? { comprado_en: compradoEn } : {}),
       ...(valorTotal !== undefined ? { valor_total: valorTotal } : {}),
       ...(referencia ? { referencia } : {}),
-      ...(esLeche ? { temperatura: Number(v.temperatura), acidez: Number(v.acidez) } : {}),
+      ...(esLeche && this.calidadActiva() ? { temperatura: Number(v.temperatura), acidez: Number(v.acidez) } : {}),
     };
 
     this.guardando.set(true);

@@ -1,6 +1,7 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
 import type { MfaConfig } from '../../core/auth/auth.models';
+import { AvisoLegalComponent } from '../../shared/ui/aviso-legal/aviso-legal.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { MfaCodigoFormComponent } from './mfa-codigo-form.component';
 
@@ -15,8 +16,11 @@ import { MfaCodigoFormComponent } from './mfa-codigo-form.component';
 @Component({
   selector: 'app-mfa-enrolar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, MfaCodigoFormComponent],
+  imports: [AvisoLegalComponent, IconComponent, MfaCodigoFormComponent],
   template: `
+    <app-aviso-legal class="mb-4" ruta="/legal/politica-privacidad" enlace="Política de privacidad" data-testid="aviso-mfa">
+      SILA guarda el secreto de esta aplicación (cifrado) y tus códigos de respaldo (de forma irreversible) solo para verificar que eres tú.
+    </app-aviso-legal>
     <ol class="mb-4 list-decimal space-y-1 ps-5 text-sm text-muted-foreground">
       <li>Instala Google Authenticator, Microsoft Authenticator o Authy en tu celular.</li>
       <li>Escanea este código QR desde la aplicación.</li>

@@ -17,12 +17,16 @@ export interface Periodo {
   fecha_inicio: string;
   fecha_fin: string;
   estado: EstadoPeriodo;
-  ingresos_ventas: number;
-  costo_produccion: number;
-  gastos_operativos: number;
-  cartera_castigada: number;
+  /**
+   * The six result figures (`ingresos_ventas`, `costo_produccion`, `gastos_operativos`, `cartera_castigada`, `resultado_estimado`,
+   * `caja_neta`) are `null` when the company has the RESULTADO_QUINCENA module off: «not shown», never zero.
+   */
+  ingresos_ventas: number | null;
+  costo_produccion: number | null;
+  gastos_operativos: number | null;
+  cartera_castigada: number | null;
   /** Computed by the database: ingresos - costo - gastos - cartera castigada. Management estimate, not accounting. */
-  resultado_estimado: number;
+  resultado_estimado: number | null;
 
   // ---- Quincena accounts (see «Cuentas de la quincena» of the contract) ----
   /** IVA of the (non-annulled) sales. `ingresos_ventas` is WITHOUT IVA. */
@@ -51,7 +55,7 @@ export interface Periodo {
   /** Payments to providers made DURING the quincena (from cash). */
   pagos_proveedores_caja: number;
   /** total_cobrado − pagos_proveedores_caja − gastos_operativos − compras_contado. */
-  caja_neta: number;
+  caja_neta: number | null;
 }
 
 export interface PeriodosQuery {

@@ -4,6 +4,7 @@ import { provideNgIconLoader } from '@ng-icons/core';
 import { of, throwError } from 'rxjs';
 import type { Rol } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/services/auth.service';
+import { FotosService } from '../../shared/services/fotos.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { USUARIOS_REPOSITORY } from './data/usuarios.provider';
 import type { Usuario } from './models/usuarios.models';
@@ -45,6 +46,7 @@ function crearRepo() {
 
 describe('UsuariosPageComponent', () => {
   let repo: ReturnType<typeof crearRepo>;
+  let fotos: { imagen: ReturnType<typeof vi.fn>; quitarDe: ReturnType<typeof vi.fn>; quitarMia: ReturnType<typeof vi.fn> };
 
   beforeAll(() => {
     // jsdom no implementa <dialog>.showModal()/close(): el diálogo real usa ambos.
@@ -60,8 +62,9 @@ describe('UsuariosPageComponent', () => {
 
   beforeEach(() => {
     repo = crearRepo();
+    fotos = { imagen: vi.fn(() => Promise.resolve(null)), quitarDe: vi.fn(() => of(undefined)), quitarMia: vi.fn(() => of(undefined)) };
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideNgIconLoader(async () => ''), { provide: USUARIOS_REPOSITORY, useValue: repo }],
+      providers: [provideRouter([]), provideNgIconLoader(async () => ''), { provide: USUARIOS_REPOSITORY, useValue: repo }, { provide: FotosService, useValue: fotos }],
     });
   });
 
@@ -425,6 +428,31 @@ describe('UsuariosPageComponent', () => {
       mia.click();
       await estabilizar(f);
       expect(raiz(f).textContent).toContain('incluida esta');
+    });
+  });
+
+  describe('foto de perfil', () => {
+    it('cada fila lleva el avatar; «Quitar foto» solo en quien tiene foto, con confirmación y sin código', async () => {
+      repo.listar.mockReturnValue(of({ items: [FILAS[0], usuario(2, { foto_version: 'v1' }), FILAS[2]], total: 3, page: 0, size: 10 }));
+      const f = await crear('ADMIN');
+      const exito = vi.spyOn(TestBed.inject(ToastService), 'exito');
+
+      expect(raiz(f).querySelectorAll('tbody tr app-avatar').length).toBe(3);
+      expect(fotos.imagen).toHaveBeenCalledWith(2, 'v1');
+      expect(raiz(f).querySelectorAll('tbody button[title="Quitar foto"]').length).toBe(1);
+
+      fila(f, 'Persona 2').querySelector<HTMLButtonElement>('button[title="Quitar foto"]')!.click();
+      await estabilizar(f);
+      const dialogo = raiz(f).querySelector('dialog[open]')!;
+      expect(dialogo.textContent).toContain('Se quitará la foto de perfil de Persona 2');
+      expect(dialogo.querySelector('input[inputmode=numeric]')).toBeNull();
+      expect(fotos.quitarDe).not.toHaveBeenCalled();
+
+      boton(dialogo, 'Quitar foto')!.click();
+      await estabilizar(f);
+
+      expect(fotos.quitarDe).toHaveBeenCalledWith(2);
+      expect(exito).toHaveBeenCalledWith('Se quitó la foto de "usuario2".');
     });
   });
 });

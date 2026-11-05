@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
@@ -31,10 +32,17 @@ const NUMERO = /^-?\d+([.,]\d{1,2})?$/;
   template: `
     <app-page-header title="Parámetros del sistema" description="Valores de negocio que se ajustan sin tocar el código. Cada cambio queda en la auditoría." />
 
-    <p class="mb-6 flex items-start gap-2 rounded-md bg-muted px-4 py-3 text-sm">
-      <app-icon name="lucideInfo" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      Un cambio rige desde la siguiente operación y no altera lo ya registrado.
-    </p>
+    @if (editable()) {
+      <p class="mb-6 flex items-start gap-2 rounded-md bg-muted px-4 py-3 text-sm">
+        <app-icon name="lucideInfo" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        Un cambio rige desde la siguiente operación y no altera lo ya registrado.
+      </p>
+    } @else {
+      <p class="mb-6 flex items-start gap-2 rounded-md bg-muted px-4 py-3 text-sm" data-testid="parametros-solo-lectura">
+        <app-icon name="lucideLock" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        Solo consulta: los parámetros los gestiona el administrador del sistema.
+      </p>
+    }
 
     @if (parametros.error()) {
       <div role="alert" class="sila-card p-6 text-center">
@@ -57,12 +65,17 @@ const NUMERO = /^-?\d+([.,]\d{1,2})?$/;
             @for (fila of grupo.filas; track fila.parametro.clave) {
               <li class="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-start">
                 <div>
-                  <label [for]="'p-' + fila.parametro.clave" class="text-sm font-medium">{{ fila.nombre }}</label>
+                  @if (editable()) {
+                    <label [for]="'p-' + fila.parametro.clave" class="text-sm font-medium">{{ fila.nombre }}</label>
+                  } @else {
+                    <p class="text-sm font-medium">{{ fila.nombre }}</p>
+                  }
                   <p class="text-xs text-muted-foreground">{{ fila.parametro.descripcion }}</p>
                   <p class="mt-1 text-xs text-muted-foreground">
                     Rango permitido: {{ numero(fila.parametro.minimo) }} a {{ numero(fila.parametro.maximo) }} · Valor actual: <strong>{{ numero(fila.parametro.valor) }}</strong>
                   </p>
                 </div>
+                @if (editable()) {
                 <div class="flex flex-wrap items-start gap-2">
                   <div>
                     <input
@@ -82,6 +95,7 @@ const NUMERO = /^-?\d+([.,]\d{1,2})?$/;
                   </div>
                   <button type="button" class="sila-btn sila-btn-primary" [disabled]="!fila.cambio || !!fila.error || guardando()" (click)="pedirConfirmacion(fila)">Guardar</button>
                 </div>
+                }
               </li>
             }
           </ul>
@@ -90,7 +104,7 @@ const NUMERO = /^-?\d+([.,]\d{1,2})?$/;
     }
 
     <app-confirm-dialog
-      [open]="pendiente() !== null"
+      [open]="editable() && pendiente() !== null"
       titulo="Cambiar parámetro"
       [mensaje]="mensajeConfirmacion()"
       textoConfirmar="Cambiar valor"
@@ -103,6 +117,7 @@ const NUMERO = /^-?\d+([.,]\d{1,2})?$/;
 export class ParametrosPageComponent {
   private readonly repo = inject(PARAMETROS_REPOSITORY);
   private readonly toast = inject(ToastService);
+  private readonly empresa = inject(EmpresaService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -114,6 +129,8 @@ export class ParametrosPageComponent {
   private readonly erroresServidor = signal<Record<string, string>>({});
   protected readonly pendiente = signal<{ clave: string; nombre: string; antes: number; despues: number } | null>(null);
   protected readonly guardando = signal(false);
+  /** Without the PARAMETROS module the values are still read (other screens use them) but only the owner of the system changes them. */
+  protected readonly editable = computed(() => this.empresa.activo('PARAMETROS'));
 
   protected readonly grupos = computed(() => {
     const lista = this.parametros.hasValue() ? this.parametros.value() : [];
@@ -121,6 +138,8 @@ export class ParametrosPageComponent {
     const porGrupo = new Map<GrupoParametro, Fila[]>();
     for (const parametro of lista) {
       const conocido = PARAMETROS_CONOCIDOS[parametro.clave];
+      // Settings of a module the company does not have are not listed (and a group left empty disappears).
+      if (conocido?.modulo && !this.empresa.activo(conocido.modulo)) continue;
       const texto = ed[parametro.clave] ?? String(parametro.valor);
       const numeroEscrito = NUMERO.test(texto.trim()) ? Number(texto.trim().replace(',', '.')) : NaN;
       let error: string | null = null;

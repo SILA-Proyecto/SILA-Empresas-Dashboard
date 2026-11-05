@@ -240,6 +240,10 @@
   .sila-sidebar-collapsed .sidebar-user-info {
     display: none;
   }
+  /* Collapsed menu: only the logo (or the initials), squeezed into the 72 px column (it overrides the inline width). */
+  .sila-sidebar-collapsed .sila-logo-empresa {
+    max-width: 2.5rem !important;
+  }
   .sila-sidebar-collapsed .sidebar-nav-item {
     justify-content: center;
   }

@@ -17,6 +17,8 @@ import { periodoDe, OCTUBRE_1 } from './resultado-quincena.fixture';
 import { ResultadoQuincenaPageComponent } from './resultado-quincena-page.component';
 import { RESULTADO_QUINCENA_ROUTES } from './resultado-quincena.routes';
 import { instalarInterseccionFalsa } from '../../shared/testing/interseccion-falsa';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
+import { MODULOS_OPCIONALES, type CodigoModulo } from '../../core/empresa/empresa.models';
 
 const PALETA = { chart1: '#00f', chart2: '#0f0', chart3: '#f00', chart4: '#ff0', chart5: '#0ff', success: '#0f0', destructive: '#f00', mutedForeground: '#888', border: '#333', foreground: '#fff' };
 const PROVEEDOR_TEMA = { provide: ChartThemeService, useValue: { palette: signal(PALETA) } };
@@ -67,7 +69,7 @@ describe('Resultado por quincena', () => {
     };
     gastos = { porCategoria: vi.fn(() => of([{ id_periodo: 19, anio: 2026, mes: 10, quincena: 1, categoria: 'COMBUSTIBLE', total_gastos: 30000 }, { id_periodo: 19, anio: 2026, mes: 10, quincena: 1, categoria: 'MANTENIMIENTO', total_gastos: 20000 }])) };
     TestBed.configureTestingModule({
-      providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }],
+      providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }],
     });
     sinApex();
   });
@@ -84,6 +86,17 @@ describe('Resultado por quincena', () => {
     el.querySelector<HTMLElement>(sel)!.click();
     await estabilizar(f);
   };
+
+  it('si el módulo se apagó con la pantalla abierta (las cifras llegan en null) lo dice, sin dibujar $0', async () => {
+    const nulos = { ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null };
+    periodos['listar'].mockImplementation(() => pagina(año2026().map((p) => ({ ...p, ...nulos }))));
+    const { el } = await abrir();
+
+    expect(el.querySelector('[data-testid=resultado-inactivo]')?.textContent).toContain('no está activo para su empresa');
+    expect(el.querySelector('[data-testid=bloque-resultado]')).toBeNull();
+    expect(el.querySelector('[data-testid=tabla-anio]')).toBeNull();
+    expect(el.textContent).not.toMatch(/\$\s?0(?![\d.])/);
+  });
 
   describe('qué se pide y qué se selecciona', () => {
     it('pide los años, la quincena de hoy y las 24 del año (anio + size 50), y los gastos de la seleccionada', async () => {
@@ -204,7 +217,7 @@ describe('Resultado por quincena', () => {
       const abierta = await abrir();
       expect(abierta.t('[data-testid=aviso-en-curso]')).toBe('Quincena en curso: las cifras pueden cambiar.');
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
       sinApex();
       const cerrada = { ...OCTUBRE_1, estado: 'CERRADA' as const };
       periodos['actual'].mockReturnValue(of(cerrada));
@@ -386,7 +399,7 @@ describe('Resultado por quincena', () => {
       expect(admin.el.querySelector('[data-testid=sin-quincenas] a')?.getAttribute('href')).toBe('/periodos');
       expect(periodos['listar']).not.toHaveBeenCalled();
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
       sinApex();
       const operativo = await abrir('OPERATIVO');
 
@@ -436,7 +449,7 @@ describe('Resultado por quincena', () => {
       const admin = await abrir('ADMIN');
       expect(admin.el.querySelector('a[href="/periodos/19"]')).toBeTruthy();
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
       sinApex();
       const op = await abrir('OPERATIVO');
 
@@ -447,7 +460,7 @@ describe('Resultado por quincena', () => {
       const cifras = (el: HTMLElement) => limpio(el.querySelector('[data-testid=bloque-resultado]')!.textContent) + limpio(el.querySelector('[data-testid=bloque-caja]')!.textContent) + limpio(el.querySelector('[data-testid=bloque-deudas]')!.textContent) + limpio(el.querySelector('[data-testid=totales-anio]')!.textContent);
       const admin = cifras((await abrir('ADMIN')).el);
       TestBed.resetTestingModule();
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: PERIODOS_REPOSITORY, useValue: periodos }, { provide: GASTOS_REPOSITORY, useValue: gastos }] });
       sinApex();
 
       expect(cifras((await abrir('OPERATIVO')).el)).toBe(admin);
@@ -459,9 +472,10 @@ describe('Resultado por quincena', () => {
 class Vacia {}
 
 describe('Resultado por quincena · rutas', () => {
-  async function ir(rol: Rol, url: string): Promise<string> {
+  async function ir(rol: Rol, url: string, activos: readonly CodigoModulo[] = MODULOS_OPCIONALES): Promise<string> {
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(activos),
         provideRouter([
           { path: '', component: Vacia },
           { path: 'periodos', loadChildren: () => PERIODOS_ROUTES },
@@ -493,8 +507,15 @@ describe('Resultado por quincena · rutas', () => {
     expect(await ir('ADMIN', '/periodos')).toBe('/periodos');
   });
 
-  it('la ruta nueva no lleva roleGuard', () => {
-    expect(RESULTADO_QUINCENA_ROUTES.every((r) => !r.canActivate?.length)).toBe(true);
+  it('la ruta nueva no lleva roleGuard: solo el del módulo', () => {
+    expect(RESULTADO_QUINCENA_ROUTES.every((r) => r.canActivate?.length === 1)).toBe(true);
     expect(PERIODOS_ROUTES.every((r) => r.canActivate?.length === 1)).toBe(true);
+  });
+
+  it('con RESULTADO_QUINCENA apagado nadie entra a /resultado-quincena; /periodos sigue abierto para el ADMIN', async () => {
+    const sinResultado = MODULOS_OPCIONALES.filter((m) => m !== 'RESULTADO_QUINCENA');
+    expect(await ir('ADMIN', '/resultado-quincena', sinResultado)).toBe('/');
+    TestBed.resetTestingModule();
+    expect(await ir('ADMIN', '/periodos', sinResultado)).toBe('/periodos');
   });
 });

@@ -1,3 +1,4 @@
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -63,7 +64,7 @@ function opcion<T extends string>(valor: string | null, validos: readonly { valo
         <p class="mt-1 text-xl font-bold tabular-nums sm:text-2xl" data-testid="resumen-cantidad">{{ resumen.hasValue() ? numero(resumen.value().cantidad) : '—' }}</p>
       </div>
       <p class="col-span-2 text-xs text-muted-foreground xl:col-span-4">
-        Con los filtros de abajo. Solo suman los comprobantes vigentes (los anulados no cuentan, aunque filtres por «Anulados»), y la venta a crédito no entra a caja hasta que se abona.
+        Con los filtros de abajo. Solo suman los comprobantes vigentes (los anulados no cuentan, aunque filtres por «Anulados»)@if (creditoActivo()) {, y la venta a crédito no entra a caja hasta que se abona}.
       </p>
     </section>
     @if (resumen.error()) {
@@ -164,6 +165,8 @@ function opcion<T extends string>(valor: string | null, validos: readonly { valo
 })
 export class ComprobantesPageComponent {
   private readonly repo = inject(COMPROBANTES_REPOSITORY);
+  private readonly empresa = inject(EmpresaService);
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 

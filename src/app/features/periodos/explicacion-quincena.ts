@@ -1,5 +1,6 @@
 import { formatoCop } from '../../shared/utils/formato-co';
 import type { Periodo } from './models/periodos.models';
+import type { PeriodoConResultado } from './con-resultado';
 
 export interface FraseQuincena {
   clave: 'compras' | 'deuda' | 'resultado' | 'caja';
@@ -15,9 +16,16 @@ type DatosQuincena = Pick<
 
 const redondeo = (n: number) => Math.round(n * 100) / 100;
 
+type CamposResultado = 'ingresos_ventas' | 'costo_produccion' | 'gastos_operativos' | 'cartera_castigada' | 'resultado_estimado' | 'caja_neta';
+
+function tieneResultado(p: DatosQuincena): p is DatosQuincena & Pick<PeriodoConResultado, CamposResultado> {
+  return p.ingresos_ventas !== null && p.costo_produccion !== null && p.gastos_operativos !== null && p.cartera_castigada !== null && p.resultado_estimado !== null && p.caja_neta !== null;
+}
+
 /**
  * Plain-language reading of a quincena's figures: what was bought, what is owed, why the result is what it is and where the
- * cash went. Pure: every number comes from the quincena itself, nothing is estimated here.
+ * cash went. Pure: every number comes from the quincena itself, nothing is estimated here. Without the RESULTADO_QUINCENA
+ * module the result figures come as `null`: then only what was bought and what is owed is told.
  */
 export function explicarQuincena(p: DatosQuincena): FraseQuincena[] {
   const compras = p.compras_materias_primas ?? 0;
@@ -25,7 +33,6 @@ export function explicarQuincena(p: DatosQuincena): FraseQuincena[] {
   const credito = p.compras_credito ?? 0;
   const porPagar = p.por_pagar_proveedores ?? 0;
   const pagado = p.pagado_proveedores ?? 0;
-  const salioDeCaja = redondeo(p.total_cobrado - p.caja_neta);
   const frases: FraseQuincena[] = [];
 
   frases.push({
@@ -44,6 +51,8 @@ export function explicarQuincena(p: DatosQuincena): FraseQuincena[] {
         : 'No debes nada a proveedores por las compras de esta quincena.',
   });
 
+  if (!tieneResultado(p)) return frases;
+
   const extras = [
     p.gastos_operativos > 0 ? `${formatoCop(p.gastos_operativos)} de gastos` : '',
     p.cartera_castigada > 0 ? `${formatoCop(p.cartera_castigada)} de cartera castigada` : '',
@@ -58,6 +67,7 @@ export function explicarQuincena(p: DatosQuincena): FraseQuincena[] {
   });
 
   const caja = p.caja_neta;
+  const salioDeCaja = redondeo(p.total_cobrado - caja);
   frases.push({
     clave: 'caja',
     texto:

@@ -3,9 +3,8 @@ import { ApexAnnotations, ApexChart, ApexDataLabels, ApexGrid, ApexLegend, ApexP
 import { ChartThemeService } from '../../shared/services/chart-theme.service';
 import { formatoCop } from '../../shared/utils/formato-co';
 import { hoyColombia } from '../../shared/utils/fecha-co';
-import type { Periodo } from '../periodos/models/periodos.models';
 import { etiquetaQuincena } from '../periodos/periodos.format';
-import { esAtenuada } from './resultado-quincena.logica';
+import { esAtenuada, type PeriodoConResultado } from './resultado-quincena.logica';
 
 const COMPACTO = new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 });
 const MES_CORTO = new Intl.DateTimeFormat('es-CO', { month: 'short' });
@@ -31,7 +30,7 @@ export class ResultadoAnioChartComponent {
   private readonly tema = inject(ChartThemeService);
   private readonly zona = inject(NgZone);
 
-  readonly periodos = input.required<readonly Periodo[]>();
+  readonly periodos = input.required<readonly PeriodoConResultado[]>();
   /** The id of the selected quincena (it stands out). */
   readonly seleccionadaId = input<number | null>(null);
   /** Today in Colombia (`AAAA-MM-DD`): decides which quincenas are future. */

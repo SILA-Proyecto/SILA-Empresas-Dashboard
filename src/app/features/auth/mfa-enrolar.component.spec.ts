@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import type { MfaConfig } from '../../core/auth/auth.models';
 import { MfaEnrolarComponent } from './mfa-enrolar.component';
@@ -7,7 +8,7 @@ const CONFIG: MfaConfig = { secreto: 'JBSWY3DPEHPK3PXP', otpauth_uri: 'otpauth:/
 
 describe('MfaEnrolarComponent', () => {
   async function crear(config: MfaConfig | null): Promise<ComponentFixture<MfaEnrolarComponent>> {
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => '')] });
+    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([])] });
     const fixture = TestBed.createComponent(MfaEnrolarComponent);
     fixture.componentRef.setInput('config', config);
     for (let i = 0; i < 6; i++) {
@@ -17,6 +18,16 @@ describe('MfaEnrolarComponent', () => {
     }
     return fixture;
   }
+
+  it('avisa qué se guarda del segundo factor, con enlace a la política de privacidad (informativo, sin casilla)', async () => {
+    const fixture = await crear(CONFIG);
+    const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid=aviso-mfa]')!;
+
+    expect(aviso.textContent).toContain('secreto');
+    expect(aviso.textContent).toContain('códigos de respaldo');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/legal/politica-privacidad');
+    expect(aviso.querySelector('input')).toBeNull();
+  });
 
   it('dibuja el QR como imagen PNG (data URL) y muestra la clave escrita como alternativa', async () => {
     const fixture = await crear(CONFIG);

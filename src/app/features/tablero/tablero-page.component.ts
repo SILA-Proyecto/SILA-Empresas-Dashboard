@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { tap } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
@@ -13,7 +14,9 @@ import { NotificacionFilaComponent } from '../notificaciones/notificacion-fila.c
 import { destinoDe } from '../notificaciones/notificaciones.logica';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { TABLERO_REPOSITORY } from './data/tablero.provider';
-import type { Tablero } from './models/tablero.models';
+import type { Tablero, TableroQuincena } from './models/tablero.models';
+
+type ResultadoQuincena = { [K in 'ingresos_ventas' | 'costo_produccion' | 'gastos_operativos' | 'cartera_castigada' | 'resultado_estimado' | 'caja_neta']: number };
 import { claseNeto, fechaLarga, formatoPesos, horaCo, tituloQuincena } from './tablero.format';
 import { TableroBloqueComponent } from './tablero-bloque.component';
 import { TableroTarjetaComponent } from './tablero-tarjeta.component';
@@ -63,7 +66,9 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <app-tablero-tarjeta titulo="Ventas de hoy" [valor]="pesos(t.hoy.ventas_total)" icono="lucideReceipt">
             <p data-testid="ventas-cantidad">{{ numero(t.hoy.ventas_cantidad) }} {{ t.hoy.ventas_cantidad === 1 ? 'venta' : 'ventas' }}</p>
-            <p>Contado {{ pesos(t.hoy.ventas_contado) }} · Crédito {{ pesos(t.hoy.ventas_credito) }}</p>
+            @if (creditoActivo() && t.hoy.ventas_credito !== null) {
+              <p>Contado {{ pesos(t.hoy.ventas_contado) }} · Crédito {{ pesos(t.hoy.ventas_credito) }}</p>
+            }
           </app-tablero-tarjeta>
           <app-tablero-tarjeta titulo="Caja de hoy" [valor]="pesos(t.hoy.caja_neta)" [clase]="neto(t.hoy.caja_neta)" icono="lucideWallet" data-testid="tarjeta-caja">
             <p>Ingresos {{ pesos(t.hoy.caja_ingresos) }}</p>
@@ -88,16 +93,21 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
             <span class="text-xs text-muted-foreground">{{ fecha(q.fecha_inicio) }} – {{ fecha(q.fecha_fin) }}</span>
             <a *hasRole="'ADMIN'" [routerLink]="['/periodos', q.id_periodo]" class="inline-flex min-h-8 items-center text-xs font-medium text-primary hover:underline max-lg:min-h-11">Ver cuentas de la quincena</a>
           </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" [class.xl:grid-cols-4]="tarjetasQuincena(q) === 4" [class.xl:grid-cols-3]="tarjetasQuincena(q) === 3" [class.xl:grid-cols-2]="tarjetasQuincena(q) === 2">
+            @if (resultadoDe(q); as q) {
             <app-tablero-tarjeta titulo="Resultado estimado" [valor]="pesos(q.resultado_estimado)" [clase]="neto(q.resultado_estimado)" icono="lucideChartColumn" data-testid="tarjeta-resultado">
-              <p>Vendido sin IVA {{ pesos(q.ingresos_ventas) }} − costo de lo producido {{ pesos(q.costo_produccion) }} − gastos {{ pesos(q.gastos_operativos) }} − cartera castigada {{ pesos(q.cartera_castigada) }}</p>
+              <p>Vendido sin IVA {{ pesos(q.ingresos_ventas) }} − costo de lo producido {{ pesos(q.costo_produccion) }} − gastos {{ pesos(q.gastos_operativos) }}@if (creditoActivo() || q.cartera_castigada !== 0) { − cartera castigada {{ pesos(q.cartera_castigada) }}}</p>
             </app-tablero-tarjeta>
             <app-tablero-tarjeta titulo="Caja neta" [valor]="pesos(q.caja_neta)" [clase]="neto(q.caja_neta)" icono="lucideBanknote">
               <p>Entró {{ pesos(q.total_cobrado) }} · salió {{ pesos(q.total_cobrado - q.caja_neta) }}</p>
             </app-tablero-tarjeta>
-            <app-tablero-tarjeta titulo="Vendido / cobrado" [valor]="pesos(q.total_vendido)" icono="lucideReceipt">
-              <p>Cobrado {{ pesos(q.total_cobrado) }}</p>
-            </app-tablero-tarjeta>
+            }
+            <!-- Without the result cards, what was sold and collected would be lost: this one shows then even without credit. -->
+            @if (verVendido(q)) {
+              <app-tablero-tarjeta titulo="Vendido / cobrado" [valor]="pesos(q.total_vendido)" icono="lucideReceipt">
+                <p>Cobrado {{ pesos(q.total_cobrado) }}</p>
+              </app-tablero-tarjeta>
+            }
             <app-tablero-tarjeta titulo="Proveedores por pagar" [valor]="pesos(q.por_pagar_proveedores)" icono="lucideHandCoins">
               <p>De esta quincena: compras a crédito sin pagar · {{ numero(q.leche_litros) }} L de leche recibidos</p>
               <a routerLink="/cuentas-proveedores" class="mt-1 inline-flex min-h-8 items-center text-xs font-medium text-primary hover:underline max-lg:min-h-11">Ver a quién le debo</a>
@@ -128,13 +138,15 @@ export const INTERVALO_TABLERO_MS = 2 * 60 * 1000;
 
       <!-- CARTERA · INVENTARIO · PROVEEDORES -->
       <section class="mb-8" aria-label="Cartera, inventario y proveedores">
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4" [class.lg:grid-cols-3]="creditoActivo() && t.cartera" [class.lg:grid-cols-2]="!(creditoActivo() && t.cartera)">
+          @if (creditoActivo() && t.cartera; as cartera) {
           <app-tablero-bloque titulo="Cartera" icono="lucideWallet" [enlaces]="enlacesCartera">
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Saldo total</dt><dd class="font-semibold tabular-nums" data-testid="cartera-saldo">{{ pesos(t.cartera.saldo_total) }}</dd></div>
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Vencido</dt><dd class="font-medium tabular-nums" [class.text-destructive]="t.cartera.saldo_vencido > 0">{{ pesos(t.cartera.saldo_vencido) }}</dd></div>
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Clientes con saldo</dt><dd class="font-medium tabular-nums">{{ numero(t.cartera.clientes_con_saldo) }}</dd></div>
-            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Clientes en mora</dt><dd class="font-medium tabular-nums" [class.text-destructive]="t.cartera.clientes_en_mora > 0">{{ numero(t.cartera.clientes_en_mora) }}</dd></div>
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Saldo total</dt><dd class="font-semibold tabular-nums" data-testid="cartera-saldo">{{ pesos(cartera.saldo_total) }}</dd></div>
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Vencido</dt><dd class="font-medium tabular-nums" [class.text-destructive]="cartera.saldo_vencido > 0">{{ pesos(cartera.saldo_vencido) }}</dd></div>
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Clientes con saldo</dt><dd class="font-medium tabular-nums">{{ numero(cartera.clientes_con_saldo) }}</dd></div>
+            <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Clientes en mora</dt><dd class="font-medium tabular-nums" [class.text-destructive]="cartera.clientes_en_mora > 0">{{ numero(cartera.clientes_en_mora) }}</dd></div>
           </app-tablero-bloque>
+          }
 
           <app-tablero-bloque titulo="Inventario" icono="lucideWarehouse" [enlaces]="enlacesInventario">
             <div class="flex items-baseline justify-between gap-3"><dt class="text-muted-foreground">Valor de productos</dt><dd class="font-semibold tabular-nums">{{ pesos(t.inventario.valor_productos) }}</dd></div>
@@ -185,6 +197,25 @@ export class TableroPageComponent {
   private readonly repo = inject(TABLERO_REPOSITORY);
   private readonly errores = inject(ApiErrorService);
   private readonly router = inject(Router);
+  private readonly empresa = inject(EmpresaService);
+  /** Without the credit module the dashboard has no portfolio block and no credit figures. */
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
+
+  /** The quincena with its result figures, or `null` when the RESULTADO_QUINCENA module is off (those cards are hidden, never $0). */
+  protected resultadoDe(q: TableroQuincena): (TableroQuincena & ResultadoQuincena) | null {
+    return q.ingresos_ventas !== null && q.costo_produccion !== null && q.gastos_operativos !== null && q.cartera_castigada !== null && q.resultado_estimado !== null && q.caja_neta !== null
+      ? (q as TableroQuincena & ResultadoQuincena)
+      : null;
+  }
+
+  protected verVendido(q: TableroQuincena): boolean {
+    return this.creditoActivo() || this.resultadoDe(q) === null;
+  }
+
+  /** How many cards the quincena row has, so the grid fits them on wide screens. */
+  protected tarjetasQuincena(q: TableroQuincena): number {
+    return (this.resultadoDe(q) ? 2 : 0) + (this.verVendido(q) ? 1 : 0) + 1;
+  }
   protected readonly notificaciones = inject(NotificacionesService);
 
   protected readonly pesos = formatoPesos;
@@ -215,7 +246,7 @@ export class TableroPageComponent {
   });
   protected readonly descripcion = computed(() => {
     const t = this.datos();
-    return t ? `Hoy es ${fechaLarga(t.fecha)}.` : 'Resumen del día, la quincena, la cartera y el inventario.';
+    return t ? `Hoy es ${fechaLarga(t.fecha)}.` : (this.creditoActivo() ? 'Resumen del día, la quincena, la cartera y el inventario.' : 'Resumen del día, la quincena y el inventario.');
   });
   protected readonly mensajeError = computed(() => (this.recurso.error() ? this.errores.describe(this.recurso.error()).mensaje : ''));
 

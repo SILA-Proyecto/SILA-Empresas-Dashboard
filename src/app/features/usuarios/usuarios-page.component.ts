@@ -7,6 +7,8 @@ import { ApiErrorService } from '../../core/api/api-error';
 import type { Rol } from '../../core/auth/auth.models';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
 import { AuthService } from '../../core/services/auth.service';
+import { FotosService } from '../../shared/services/fotos.service';
+import { AvatarComponent } from '../../shared/ui/avatar/avatar.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -27,7 +29,7 @@ import { UsuarioSesionesDialogComponent } from './usuario-sesiones-dialog.compon
 
 type FiltroActivo = 'TODOS' | 'ACTIVOS' | 'INACTIVOS';
 type FiltroRol = 'TODOS' | Rol;
-type TipoAccion = 'estado' | 'desbloquear' | 'clave' | 'mfa' | 'sesiones';
+type TipoAccion = 'estado' | 'desbloquear' | 'clave' | 'mfa' | 'sesiones' | 'foto';
 
 interface Accion {
   tipo: TipoAccion;
@@ -40,6 +42,7 @@ const MOTIVO_PROPIA_CUENTA = 'No puedes hacer esto sobre tu propia cuenta: lo ha
   selector: 'app-usuarios-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FiltrosPlegablesComponent, 
+    AvatarComponent,
     ClaveTemporalDialogComponent,
     ConfirmarConCodigoDialogComponent,
     ConfirmDialogComponent,
@@ -57,6 +60,7 @@ const MOTIVO_PROPIA_CUENTA = 'No puedes hacer esto sobre tu propia cuenta: lo ha
 export class UsuariosPageComponent {
   private readonly repo = inject(USUARIOS_REPOSITORY);
   private readonly auth = inject(AuthService);
+  private readonly fotos = inject(FotosService);
   private readonly toast = inject(ToastService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
@@ -148,6 +152,13 @@ export class UsuariosPageComponent {
           texto: 'Cerrar sus sesiones',
           peligro: true,
         };
+      case 'foto':
+        return {
+          titulo: 'Quitar la foto',
+          mensaje: `Se quitará la foto de perfil de ${nombre} y se mostrarán sus iniciales. Podrá subir otra desde «Mi cuenta».`,
+          texto: 'Quitar foto',
+          peligro: true,
+        };
       case 'mfa':
         return {
           titulo: 'Restablecer segundo factor',
@@ -189,7 +200,7 @@ export class UsuariosPageComponent {
     this.procesando.set(true);
     this.errorAccion.set(null);
     this.errorCodigoAccion.set(null);
-    let peticion: Observable<Usuario | UsuarioConClaveTemporal>;
+    let peticion: Observable<Usuario | UsuarioConClaveTemporal | void>;
     switch (a.tipo) {
       case 'estado':
         peticion = this.repo.cambiarEstado(id, !a.usuario.activo);
@@ -205,6 +216,10 @@ export class UsuariosPageComponent {
         break;
       case 'sesiones':
         peticion = this.repo.cerrarSesiones(id);
+        break;
+      case 'foto':
+        // My own photo goes through «yo» so my session (header, menu) drops it too.
+        peticion = this.esYo(a.usuario) ? this.fotos.quitarMia() : this.fotos.quitarDe(id);
         break;
     }
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -233,7 +248,7 @@ export class UsuariosPageComponent {
     });
   }
 
-  private avisarExito(a: Accion, respuesta: Usuario | UsuarioConClaveTemporal): void {
+  private avisarExito(a: Accion, respuesta: Usuario | UsuarioConClaveTemporal | void): void {
     const usuario = a.usuario.usuario;
     switch (a.tipo) {
       case 'estado':
@@ -244,7 +259,7 @@ export class UsuariosPageComponent {
         break;
       case 'clave':
         this.toast.exito(`Clave de "${usuario}" restablecida.`);
-        if ('clave_temporal' in respuesta) {
+        if (respuesta && 'clave_temporal' in respuesta) {
           this.claveTemporal.set({ usuario, clave: respuesta.clave_temporal });
         }
         break;
@@ -253,6 +268,9 @@ export class UsuariosPageComponent {
         break;
       case 'mfa':
         this.toast.exito(`Segundo factor de "${usuario}" restablecido: lo configurará al ingresar.`);
+        break;
+      case 'foto':
+        this.toast.exito(`Se quitó la foto de "${usuario}".`);
         break;
     }
   }

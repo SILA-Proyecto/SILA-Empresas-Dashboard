@@ -29,6 +29,7 @@ describe('Mi cuenta · acciones que piden el código MFA', () => {
     auth = {
       sesion: signal({ ...ANA }),
       codigosRestantes: signal<number | null>(null),
+      isAuthenticated: signal(true),
       respaldoEstado: vi.fn(() => of({ restantes: 5 })),
       misSesiones: vi.fn(() => of([])),
       actualizarPerfil: vi.fn(),

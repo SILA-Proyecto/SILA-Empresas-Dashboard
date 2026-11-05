@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { RouterLink } from '@angular/router';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatoFechaHora } from '../../shared/utils/formato-co';
@@ -20,7 +21,7 @@ export const INTERVALO_DRIVE_MS = 30 * 1000;
 @Component({
   selector: 'app-drive-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, IconComponent, StatusChipComponent],
+  imports: [ConfirmDialogComponent, IconComponent, RouterLink, StatusChipComponent],
   template: `
     @if (estado.error() && !datos()) {
       <div role="alert" class="sila-card p-6 text-center" data-testid="error-drive">
@@ -59,8 +60,20 @@ export const INTERVALO_DRIVE_MS = 30 * 1000;
           Última sincronización: {{ e.ultima_sincronizacion ? fechaHora(e.ultima_sincronizacion) : 'todavía ninguna' }}
         </p>
 
+        <!-- A barrier of the INTERFACE, not evidence: the backend does not record it yet (docs/legal/PENDIENTES_BACKEND.md, point 1). -->
+        <div class="mb-3 rounded-md border border-border bg-muted px-3 py-2 text-xs leading-snug" data-testid="aviso-drive">
+          <p>
+            Al conectar, una copia cifrada de los archivos (con nombres sin sentido) sale a la cuenta de Google que elijas. Google ve datos técnicos como el tamaño, las fechas, la cuenta y la IP, y los trata según sus propios términos.
+            <a routerLink="/legal/drive" target="_blank" rel="noopener" class="font-medium underline underline-offset-2">Leer el aviso<span class="sr-only"> (se abre en una pestaña nueva)</span></a>
+          </p>
+          <label class="mt-1 flex min-h-11 items-center gap-2 sm:min-h-8">
+            <input type="checkbox" class="size-4 shrink-0" data-testid="aviso-drive-casilla" [checked]="avisoDrive()" (change)="avisoDrive.set($any($event.target).checked)" />
+            He leído el aviso y quiero conectar Google Drive.
+          </label>
+        </div>
+
         <div class="mb-6 flex flex-wrap gap-2">
-          <button type="button" class="sila-btn sila-btn-primary" data-testid="conectar" [disabled]="conectando()" (click)="conectar()">
+          <button type="button" class="sila-btn sila-btn-primary" data-testid="conectar" [disabled]="conectando() || !avisoDrive()" (click)="conectar()">
             <app-icon name="lucideLink" class="size-4" aria-hidden="true" />
             {{ e.conectado ? 'Volver a conectar' : 'Conectar con Google Drive' }}
           </button>
@@ -106,6 +119,8 @@ export class DrivePanelComponent {
   protected readonly datos = computed<EstadoDriveRespuesta | null>(() => this.respuesta() ?? (this.estado.hasValue() ? this.estado.value() : null));
   protected readonly mensajeError = computed(() => (this.estado.error() ? this.errores.describe(this.estado.error()).mensaje : ''));
   protected readonly conectando = signal(false);
+  /** Asked every time before going to Google (nothing is remembered). */
+  protected readonly avisoDrive = signal(false);
   protected readonly sincronizando = signal(false);
   protected readonly desconectando = signal(false);
   protected readonly procesando = signal(false);
@@ -125,7 +140,7 @@ export class DrivePanelComponent {
 
   /** Sends the ADMIN to Google. Only an `https:` address is followed. */
   protected async conectar(): Promise<void> {
-    if (this.conectando()) return;
+    if (this.conectando() || !this.avisoDrive()) return;
     this.conectando.set(true);
     try {
       const { url } = await firstValueFrom(this.repo.driveAutorizar());

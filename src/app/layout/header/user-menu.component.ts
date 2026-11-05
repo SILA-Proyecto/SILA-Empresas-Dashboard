@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { AvatarComponent } from '../../shared/ui/avatar/avatar.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
-import { iniciales } from '../../shared/utils/formato-co';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 
 /** Header menu of the signed-in user: name, role, "Mi cuenta" and "Cerrar sesión". */
 @Component({
   selector: 'app-user-menu',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent, RouterLink, StatusChipComponent],
+  imports: [AvatarComponent, IconComponent, RouterLink, StatusChipComponent],
   template: `
     @if (sesion(); as s) {
       <div class="relative">
@@ -21,7 +21,7 @@ import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.com
           [attr.aria-expanded]="abierto()"
           (click)="alternar()"
         >
-          <span class="grid size-7 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary" aria-hidden="true">{{ iniciales() }}</span>
+          <app-avatar [idUsuario]="s.id_usuario" [nombre]="s.nombre" [fotoVersion]="s.foto_version" tamano="xs" [decorativo]="true" />
           <span class="hidden max-w-32 truncate font-medium md:inline">{{ s.nombre }}</span>
           <app-icon name="lucideChevronDown" class="size-3.5 text-muted-foreground" aria-hidden="true" />
         </button>
@@ -55,7 +55,6 @@ export class UserMenuComponent {
 
   protected readonly sesion = computed(() => this.auth.sesion());
   protected readonly abierto = signal(false);
-  protected readonly iniciales = computed(() => iniciales(this.sesion()?.nombre ?? ''));
 
   protected alternar(): void {
     this.abierto.update((v) => !v);

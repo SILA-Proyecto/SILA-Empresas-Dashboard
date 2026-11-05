@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService, isApiError } from '../../core/api/api-error';
 import type { Rol } from '../../core/auth/auth.models';
+import { AvisoLegalComponent } from '../../shared/ui/aviso-legal/aviso-legal.component';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { SilaValidators, limpiarTexto } from '../../shared/validators/sila-validators';
@@ -21,9 +22,12 @@ export interface UsuarioGuardado {
 @Component({
   selector: 'app-usuario-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CampoCodigoMfaComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [AvisoLegalComponent, CampoCodigoMfaComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule],
   template: `
     <app-dialog [open]="abierto()" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
+      <app-aviso-legal class="mb-4" ruta="/legal/politica-privacidad" enlace="Política de privacidad" data-testid="aviso-datos-terceros">
+        Quien registra a una persona debe informarle que sus datos (nombre, correo y accesos) se tratan en SILA y contar con su autorización.
+      </app-aviso-legal>
       <form id="usuario-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
         <app-form-field
           class="sm:col-span-2"

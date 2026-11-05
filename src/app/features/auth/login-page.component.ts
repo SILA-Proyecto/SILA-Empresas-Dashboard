@@ -1,15 +1,18 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiErrorService, esSesionVencida } from '../../core/api/api-error';
 import type { AuthResponse, MfaConfig } from '../../core/auth/auth.models';
 import { urlRetornoSegura } from '../../core/auth/url-retorno';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PasskeyError, PasskeyService } from '../../core/services/passkey.service';
 import { ThemeService } from '../../layout/services/theme.service';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
+import { LogoEmpresaComponent } from '../../shared/ui/logo-empresa/logo-empresa.component';
+import { PieLegalComponent } from '../../shared/ui/pie-legal/pie-legal.component';
 import { SilaValidators } from '../../shared/validators/sila-validators';
 import { CambiarClaveFormComponent, CambioClave } from './cambiar-clave-form.component';
 import { CodigosRespaldoComponent } from './codigos-respaldo.component';
@@ -50,21 +53,35 @@ const TITULOS: Record<PasoLogin, string> = {
     CodigosRespaldoComponent,
     FormFieldComponent,
     IconComponent,
+    LogoEmpresaComponent,
     MfaCodigoFormComponent,
     MfaEnrolarComponent,
     MfaRespaldoFormComponent,
+    PieLegalComponent,
     ReactiveFormsModule,
+    RouterLink,
   ],
   templateUrl: './login-page.component.html',
 })
 export class LoginPageComponent {
   private readonly auth = inject(AuthService);
+  private readonly empresa = inject(EmpresaService);
   private readonly errores = inject(ApiErrorService);
   private readonly passkey = inject(PasskeyService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   private readonly cambiarClave = viewChild(CambiarClaveFormComponent);
+
+  /** Name of the company from `GET /empresa/publica`; until it arrives (or if it fails) the screen just says «SILA». */
+  protected readonly marca = computed(() => {
+    const corto = this.empresa.nombreCorto();
+    return corto ? `SILA · ${corto}` : 'SILA';
+  });
+  protected readonly pie = computed(() => `© ${this.empresa.nombre() ?? 'SILA'} · Colombia`);
+  /** The company is suspended: its notice takes the place of the whole flow (no fields to type into). */
+  protected readonly suspension = this.empresa.suspension;
+  protected readonly comprobando = signal(false);
 
   protected readonly paso = signal<PasoLogin>('credenciales');
   protected readonly titulo = () => TITULOS[this.paso()];
@@ -100,6 +117,7 @@ export class LoginPageComponent {
   constructor() {
     // The page lives outside the shell, so it applies the theme itself.
     inject(ThemeService);
+    void this.empresa.cargarPublica();
     // The notice is shown once: it is taken out of the URL so a reload does not repeat it.
     if (this.route.snapshot.queryParamMap.has('aviso')) {
       this.router
@@ -224,6 +242,15 @@ export class LoginPageComponent {
   protected continuarTrasCodigos(): void {
     this.codigosRespaldo.set(null);
     this.entrar();
+  }
+
+  /** Suspended company: asks the public data again; if it was reactivated, the form comes back from the first step. */
+  protected async comprobarDeNuevo(): Promise<void> {
+    if (this.comprobando()) return;
+    this.comprobando.set(true);
+    await this.empresa.cargarPublica();
+    this.comprobando.set(false);
+    if (!this.suspension()) this.reiniciar(null);
   }
 
   /** Back to step 1 and forget the temporary token. */

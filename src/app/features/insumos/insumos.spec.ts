@@ -13,6 +13,7 @@ import { ACOPIO_REPOSITORY } from '../acopio/data/acopio.provider';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from '../cuentas-proveedores/data/cuentas-proveedores.provider';
 import { INSUMOS_REPOSITORY } from './data/insumos.provider';
 import type { Insumo } from './models/insumos.models';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const AZUCAR: Insumo = { id_insumo: 1, codigo: 'AZUCAR', nombre: 'Azúcar', unidad_medida: 'KG', costo_promedio: 5000, stock_actual: 20, stock_minimo: 5, valor_inventario: 100000, bajo_minimo: false, productos_que_lo_usan: 2, activo: true };
 const LECHE: Insumo = { id_insumo: 2, codigo: 'LECHE', nombre: 'Leche cruda', unidad_medida: 'LT', costo_promedio: 2200, stock_actual: 500, stock_minimo: 100, valor_inventario: 1100000, bajo_minimo: false, productos_que_lo_usan: 5, activo: true, requiere_calidad: true };
@@ -69,6 +70,7 @@ describe('Insumos', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideNgIconLoader(async () => ''),
         provideRouter([]),
         { provide: INSUMOS_REPOSITORY, useValue: repo },

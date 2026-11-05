@@ -6,6 +6,7 @@ import { CATALOGOS_REPOSITORY } from '../catalogos/data/catalogos.provider';
 import { PARAMETROS_REPOSITORY } from '../parametros/data/parametros.provider';
 import { VENTAS_REPOSITORY } from './data/ventas.provider';
 import { PuntoVentaPageComponent } from './punto-venta-page.component';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const CONSUMIDOR = { id_cliente: 1, tipo_documento: 'CC', numero_documento: '222222222222', nombre: 'CONSUMIDOR FINAL', email: '', telefono: '', direccion: '', limite_credito: 0, saldo_deudor: 0, activo: true };
 const PRODUCTO = { id_producto: 3, codigo_sku: 'QSO', producto: 'Queso', unidad_medida: 'KG', tarifa_iva: 19, stock_actual: 100, precio_base: 10, precio_pactado: null, precio_aplicable: 10 };
@@ -25,6 +26,7 @@ describe('PuntoVentaPageComponent', () => {
     };
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideRouter([]),
         provideNgIconLoader(async () => ''),
         { provide: VENTAS_REPOSITORY, useValue: ventas },

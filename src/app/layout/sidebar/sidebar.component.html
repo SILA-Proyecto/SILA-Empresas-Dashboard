@@ -10,12 +10,13 @@
   [class.sila-sidebar-open]="sidebarState.mobileOpen()"
 >
   <div class="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-      <app-icon name="lucideZap" class="h-4 w-4 text-sidebar-primary-foreground" />
-    </div>
-    <div class="sidebar-brand-text flex flex-col">
-      <span class="text-sm font-bold tracking-tight text-sidebar-foreground">SILA</span>
-      <span class="text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/65">Dashboard</span>
+    <app-logo-empresa tamano="sm" anchoMaximo="6rem" />
+    <div class="sidebar-brand-text flex min-w-0 flex-col">
+      <span class="truncate text-sm font-bold tracking-tight text-sidebar-foreground">{{ nombreCorto() }}</span>
+      <span class="text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/65">SILA</span>
+      @if (marcaEntorno(); as marca) {
+        <span class="mt-0.5 w-fit rounded bg-amber-500/20 px-1 text-[9px] font-semibold uppercase tracking-wider text-amber-500">Entorno de {{ marca }}</span>
+      }
     </div>
     <button
       type="button"
@@ -94,9 +95,7 @@
           routerLink="/cuenta"
           title="Mi cuenta"
         >
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-primary/80 to-sidebar-primary text-[11px] font-bold text-sidebar-primary-foreground" aria-hidden="true">
-            {{ iniciales() }}
-          </div>
+          <app-avatar [idUsuario]="s.id_usuario" [nombre]="s.nombre" [fotoVersion]="s.foto_version" tamano="sm" [decorativo]="true" />
           <div class="sidebar-user-info flex min-w-0 flex-1 flex-col">
             <span class="truncate text-sm font-medium text-sidebar-foreground">{{ s.nombre }}</span>
             <span class="text-[11px] text-sidebar-foreground/65">{{ s.rol === 'ADMIN' ? 'Administrador' : 'Operativo' }}</span>

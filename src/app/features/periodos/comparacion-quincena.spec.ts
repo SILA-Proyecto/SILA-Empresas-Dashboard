@@ -28,6 +28,12 @@ describe('compararQuincenas', () => {
   const ahora = periodo(2, '2026-10-16', { ingresos_ventas: 1200000, total_cobrado: 800000, gastos_operativos: 300000, resultado_estimado: 300000, caja_neta: 50000 });
   const por = (clave: string) => compararQuincenas(ahora, antes).find((c) => c.clave === clave)!;
 
+  it('sin el módulo RESULTADO_QUINCENA (cifras en null) solo compara lo que vino, nunca como cero', () => {
+    const nulos = { ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null };
+    const claves = compararQuincenas({ ...ahora, ...nulos }, { ...antes, ...nulos }).map((c) => c.clave);
+    expect(claves).toEqual(['cobrado']);
+  });
+
   it('calcula la diferencia y el porcentaje contra lo anterior', () => {
     expect(por('ventas')).toMatchObject({ actual: 1200000, anterior: 1000000, diferencia: 200000, porcentaje: 20, efecto: 'mejor' });
     expect(por('resultado')).toMatchObject({ diferencia: -100000, porcentaje: -25, efecto: 'peor' });

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { Subject, of, throwError } from 'rxjs';
 import type { Archivo } from './models/archivos.models';
@@ -15,7 +16,7 @@ describe('Subir archivos (ADMIN)', () => {
   beforeAll(polyfillDialog);
   beforeEach(() => {
     repo = { subir: vi.fn((f: File) => of(archivoDe(50, { origen: 'ADMIN', nombre_archivo: f.name }))) };
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
+    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
   });
 
   async function abrir(idCarpeta: number | null = 5) {
@@ -29,6 +30,16 @@ describe('Subir archivos (ADMIN)', () => {
     const filas = () => Array.from(el.querySelectorAll<HTMLElement>('[data-testid=lista-subida] li'));
     return { f, el, subido, filas, agregar: async (...a: File[]) => { f.componentInstance.agregar(a); await estabilizar(f); } };
   }
+
+  it('avisa junto a la zona de subida que el contenido debe ser lícito y de quien lo sube, con enlace a los términos (informativo)', async () => {
+    const { el } = await abrir();
+    const aviso = el.querySelector('[data-testid=aviso-subida]')!;
+
+    expect(aviso.textContent).toContain('contenido lícito');
+    expect(aviso.textContent).toContain('derechos');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/legal/terminos');
+    expect(aviso.querySelector('input')).toBeNull();
+  });
 
   it('dice que los archivos se revisan con antivirus, se limpian y se guardan cifrados, y limita los tipos del selector', async () => {
     const { el } = await abrir();

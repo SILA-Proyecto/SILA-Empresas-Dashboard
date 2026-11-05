@@ -2,6 +2,8 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { CodigosRespaldoComponent } from './codigos-respaldo.component';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
+import { ThemeService } from '../../layout/services/theme.service';
 
 const CODIGOS = ['AAAAA-11111', 'BBBBB-22222', 'CCCCC-33333', 'DDDDD-44444', 'EEEEE-55555', 'FFFFF-66666', 'GGGGG-77777', 'HHHHH-88888', 'JJJJJ-99999', 'KKKKK-23456'];
 
@@ -24,7 +26,13 @@ describe('CodigosRespaldoComponent', () => {
 
   beforeEach(async () => {
     copiar = vi.fn(() => true);
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), { provide: Clipboard, useValue: { copy: copiar } }] });
+    TestBed.configureTestingModule({ providers: [
+      provideEmpresaFalsa(),
+      provideNgIconLoader(async () => ''),
+      { provide: Clipboard, useValue: { copy: copiar } },
+      // The real one saves the look preferences in localStorage: this test checks the storage is left untouched.
+      { provide: ThemeService, useValue: { iconStyle: () => 'lucide' } },
+    ] });
     fixture = TestBed.createComponent(CodigosRespaldoComponent);
     fixture.componentRef.setInput('codigos', CODIGOS);
     fixture.componentRef.setInput('usuario', 'ana.perez');
@@ -95,7 +103,7 @@ describe('CodigosRespaldoComponent', () => {
 
       expect(nombre).toMatch(/^sila-codigos-respaldo-ana\.perez-\d{4}-\d{2}-\d{2}\.txt$/);
       const texto = await leer(blob!);
-      expect(texto.split('\n')[0]).toBe('SILA · Llanolat — códigos de respaldo');
+      expect(texto.split('\n')[0]).toBe('SILA · Pruebas — códigos de respaldo');
       expect(texto).toContain('Usuario: ana.perez');
       for (const codigo of CODIGOS) expect(texto).toContain(codigo);
       expect(texto).not.toMatch(/clave|contraseña|token/i);
@@ -126,6 +134,9 @@ describe('CodigosRespaldoComponent', () => {
   });
 
   it('los códigos no se escriben en ningún almacenamiento', () => {
+    // Starts empty: another spec file of the same run may have left its own entries (e.g. the look preferences).
+    localStorage.clear();
+    sessionStorage.clear();
     const escritura = vi.spyOn(Storage.prototype, 'setItem');
     boton('Copiar').click();
     boton('Imprimir').click();

@@ -101,7 +101,7 @@
                 <span class="font-medium">{{ p.producto }}</span>
                 <span class="font-mono text-xs text-muted-foreground">{{ p.codigo_sku }}</span>
                 <span class="mt-1 text-lg font-bold tabular-nums">{{ cop(p.precio_aplicable) }}</span>
-                @if (p.precio_pactado !== null) {
+                @if (preciosClienteActivo() && p.precio_pactado !== null) {
                   <span class="inline-flex w-fit items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-medium">
                     <app-icon name="lucideHandshake" class="size-3.5" aria-hidden="true" />
                     Precio pactado
@@ -133,7 +133,7 @@
       <div class="space-y-1.5">
         <label for="pv-cliente" class="text-sm font-medium">Cliente</label>
         <app-cliente-selector idCampo="pv-cliente" [valor]="cliente()?.id_cliente ?? null" [preseleccionado]="consumidorFinal()" [etiquetaVacia]="null" (clienteElegido)="cambiarCliente($event)" />
-        @if (cliente(); as c) {
+        @if (creditoActivo() && cliente(); as c) {
           <p class="text-xs text-muted-foreground" data-testid="cupo-cliente">
             @if (esConsumidorFinal()) {
               Consumidor final: solo contado.
@@ -147,35 +147,37 @@
         }
       </div>
 
-      <fieldset class="space-y-2">
-        <legend class="text-sm font-medium">Tipo de venta</legend>
-        <div class="inline-flex gap-1 rounded-lg bg-muted p-1" role="radiogroup" aria-label="Tipo de venta">
-          <button type="button" role="radio" class="sila-tab" [class.sila-tab-active]="tipo() === 'CONTADO'" [attr.aria-checked]="tipo() === 'CONTADO'" (click)="tipo.set('CONTADO')">Contado</button>
-          <button
-            type="button"
-            role="radio"
-            class="sila-tab disabled:opacity-50"
-            [class.sila-tab-active]="tipo() === 'CREDITO'"
-            [attr.aria-checked]="tipo() === 'CREDITO'"
-            [disabled]="motivoSinCredito() !== null"
-            (click)="tipo.set('CREDITO')"
-          >
-            Crédito
-          </button>
-        </div>
-        @if (motivoSinCredito(); as motivo) {
-          <p class="text-xs text-muted-foreground" data-testid="motivo-sin-credito">Crédito no disponible: {{ motivo }}</p>
-        }
-        @if (tipo() === 'CREDITO') {
-          <p class="text-xs">Quedará como deuda del cliente. @if (plazoCredito() !== null) { Vence en {{ plazoCredito() }} días. }</p>
-          @if (superaCupo()) {
-            <p class="flex items-start gap-1.5 rounded-md bg-warning/15 px-3 py-2 text-xs" role="status">
-              <app-icon name="lucideTriangleAlert" class="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
-              El total supera el cupo disponible ({{ cop(cupoDisponible()) }}). El servidor decide si la acepta.
-            </p>
+      @if (creditoActivo()) {
+        <fieldset class="space-y-2">
+          <legend class="text-sm font-medium">Tipo de venta</legend>
+          <div class="inline-flex gap-1 rounded-lg bg-muted p-1" role="radiogroup" aria-label="Tipo de venta">
+            <button type="button" role="radio" class="sila-tab" [class.sila-tab-active]="tipo() === 'CONTADO'" [attr.aria-checked]="tipo() === 'CONTADO'" (click)="tipo.set('CONTADO')">Contado</button>
+            <button
+              type="button"
+              role="radio"
+              class="sila-tab disabled:opacity-50"
+              [class.sila-tab-active]="tipo() === 'CREDITO'"
+              [attr.aria-checked]="tipo() === 'CREDITO'"
+              [disabled]="motivoSinCredito() !== null"
+              (click)="tipo.set('CREDITO')"
+            >
+              Crédito
+            </button>
+          </div>
+          @if (motivoSinCredito(); as motivo) {
+            <p class="text-xs text-muted-foreground" data-testid="motivo-sin-credito">Crédito no disponible: {{ motivo }}</p>
           }
-        }
-      </fieldset>
+          @if (tipo() === 'CREDITO') {
+            <p class="text-xs">Quedará como deuda del cliente. @if (plazoCredito() !== null) { Vence en {{ plazoCredito() }} días. }</p>
+            @if (superaCupo()) {
+              <p class="flex items-start gap-1.5 rounded-md bg-warning/15 px-3 py-2 text-xs" role="status">
+                <app-icon name="lucideTriangleAlert" class="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
+                El total supera el cupo disponible ({{ cop(cupoDisponible()) }}). El servidor decide si la acepta.
+              </p>
+            }
+          }
+        </fieldset>
+      }
 
       <!-- Lines -->
       @if (lineas().length === 0) {
@@ -189,7 +191,7 @@
                   <p class="font-medium">{{ l.producto }}</p>
                   <p class="text-xs text-muted-foreground">
                     {{ cop(l.precio_unitario) }} c/u
-                    @if (l.pactado) {
+                    @if (preciosClienteActivo() && l.pactado) {
                       <span class="ms-1 rounded bg-primary/15 px-1.5 py-0.5 font-medium">pactado</span>
                     }
                     · IVA {{ numero(l.tarifa_iva) }} %

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { legalGuard } from './core/legal/legal.guard';
 import { DashboardShellComponent } from './layout/shell/dashboard-shell.component';
 
 /**
@@ -14,10 +15,23 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login-page.component').then((m) => m.LoginPageComponent),
     title: 'Iniciar sesión · SILA',
   },
+  // Public (no session): the legal texts are read from the login too.
+  {
+    path: 'legal',
+    loadChildren: () => import('./features/legal/legal.routes').then((m) => m.LEGAL_ROUTES),
+  },
+  // With a session but WITHOUT the shell: no menu, no business routes until the terms are accepted.
+  {
+    path: 'aceptar-terminos',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/legal/aceptar-terminos-page.component').then((m) => m.AceptarTerminosPageComponent),
+    title: 'Aceptar términos · SILA',
+  },
   {
     path: '',
     component: DashboardShellComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard, legalGuard],
+    canActivateChild: [legalGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'tablero' },
       {
@@ -95,6 +109,10 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         loadChildren: () => import('./features/usuarios/usuarios.routes').then((m) => m.USUARIOS_ROUTES),
+      },
+      {
+        path: 'empresa',
+        loadChildren: () => import('./features/empresa/empresa.routes').then((m) => m.EMPRESA_ROUTES),
       },
       {
         path: 'auditoria',

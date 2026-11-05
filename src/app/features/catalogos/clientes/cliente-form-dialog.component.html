@@ -1,4 +1,7 @@
 <app-dialog [open]="abierto()" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
+  <app-aviso-legal class="mb-4" ruta="/legal/politica-privacidad" enlace="Política de privacidad" data-testid="aviso-datos-terceros">
+    Quien registra datos de otra persona debe contar con su autorización previa e informada y poder demostrarla.
+  </app-aviso-legal>
   <form id="cliente-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
     <app-form-field etiqueta="Tipo de documento" [obligatorio]="true">
       <select class="sila-select" formControlName="tipo_documento">
@@ -28,13 +31,15 @@
       <input class="sila-input" formControlName="direccion" maxlength="200" autocomplete="off" />
     </app-form-field>
 
-    <app-form-field
-      etiqueta="Límite de crédito (COP)"
-      [ayuda]="esAdmin() ? 'Mayor o igual a 0, máximo 2 decimales.' : 'Solo un administrador puede fijar o cambiar el límite.'"
-      [obligatorio]="esAdmin()"
-    >
-      <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="limite_credito" />
-    </app-form-field>
+    @if (creditoActivo()) {
+      <app-form-field
+        etiqueta="Límite de crédito (COP)"
+        [ayuda]="esAdmin() ? 'Mayor o igual a 0, máximo 2 decimales.' : 'Solo un administrador puede fijar o cambiar el límite.'"
+        [obligatorio]="esAdmin()"
+      >
+        <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="limite_credito" />
+      </app-form-field>
+    }
   </form>
 
   @if (errorGeneral(); as mensaje) {

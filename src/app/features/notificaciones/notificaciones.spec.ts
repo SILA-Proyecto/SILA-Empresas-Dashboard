@@ -13,6 +13,7 @@ import { NotificacionesCampanaComponent } from './notificaciones-campana.compone
 import { NotificacionesPageComponent } from './notificaciones-page.component';
 import { destinoDe, iconoDe, marcarVistas, sinVer } from './notificaciones.logica';
 import { INTERVALO_REFRESCO_MS, NotificacionesService } from './notificaciones.service';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const n = (clave: string, severidad: Notificacion['severidad'] = 'ADVERTENCIA', extra: Partial<Notificacion> = {}): Notificacion => ({
   clave, tipo: 'INSUMO_BAJO', severidad, titulo: `Alerta ${clave}`, detalle: 'Detalle', entidad: 'INSUMO', id_entidad: 1, fecha: null, ...extra,
@@ -159,6 +160,7 @@ describe('Campana y página de notificaciones', () => {
     repo = { listar: vi.fn(() => of({ total: 2, criticas: 1, items: [n('a', 'CRITICA', { tipo: 'INSUMO_AGOTADO', titulo: 'Azúcar agotada' }), n('b', 'ADVERTENCIA', { tipo: 'CARTERA_POR_VENCER', entidad: 'CLIENTE', id_entidad: 5, titulo: 'Cartera por vencer' })] })) };
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideRouter([]),
         provideNgIconLoader(async () => ''),
         { provide: NOTIFICACIONES_REPOSITORY, useValue: repo },

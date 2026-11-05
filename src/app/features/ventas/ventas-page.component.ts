@@ -1,5 +1,5 @@
 import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -10,6 +10,7 @@ import { BotonCsvComponent } from '../../shared/ui/boton-csv/boton-csv.component
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { formatoCop, formatoFecha } from '../../shared/utils/formato-co';
 import { todasParaExportar } from '../../core/api/todas-las-paginas';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { fechaCsv, type ColumnaCsv } from '../../shared/utils/csv';
 import { crearListado } from '../../shared/utils/listado';
 import { textoConEspera } from '../../shared/utils/texto-debounce';
@@ -27,7 +28,7 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
   template: `
     <app-page-header title="Historial de ventas" description="Consulta las ventas registradas, su detalle y, si eres administrador, anúlalas.">
       <div class="flex flex-wrap gap-2">
-        <app-boton-csv nombre="ventas" [columnas]="columnasCsv" [cargar]="todas" />
+        <app-boton-csv nombre="ventas" [columnas]="columnasCsv()" [cargar]="todas" />
         <a routerLink="/ventas/nueva" class="sila-btn sila-btn-primary shrink-0">
           <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
           Nueva venta
@@ -44,26 +45,28 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
         <label for="ventas-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
         <select id="ventas-estado" class="sila-select w-40" (change)="estado.set($any($event.target).value)">
           <option value="" [selected]="estado() === ''">Todos</option>
-          @for (e of estados; track e) {
+          @for (e of estados(); track e) {
             <option [value]="e" [selected]="e === estado()">{{ chip(e).texto }}</option>
           }
         </select>
       </div>
-      <div>
-        <label for="ventas-tipo" class="mb-1 block text-xs font-medium text-muted-foreground">Tipo</label>
-        <select id="ventas-tipo" class="sila-select w-36" (change)="tipo.set($any($event.target).value)">
-          <option value="" [selected]="tipo() === ''">Todos</option>
-          <option value="CONTADO" [selected]="tipo() === 'CONTADO'">Contado</option>
-          <option value="CREDITO" [selected]="tipo() === 'CREDITO'">Crédito</option>
-        </select>
-      </div>
+      @if (creditoActivo()) {
+        <div>
+          <label for="ventas-tipo" class="mb-1 block text-xs font-medium text-muted-foreground">Tipo</label>
+          <select id="ventas-tipo" class="sila-select w-36" (change)="tipo.set($any($event.target).value)">
+            <option value="" [selected]="tipo() === ''">Todos</option>
+            <option value="CONTADO" [selected]="tipo() === 'CONTADO'">Contado</option>
+            <option value="CREDITO" [selected]="tipo() === 'CREDITO'">Crédito</option>
+          </select>
+        </div>
+      }
       <app-filtro-fechas idBase="ventas" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
       <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
     </app-filtros-plegables>
 
     <app-server-data-table
       titulo="Ventas"
-      [columns]="columnas"
+      [columns]="columnas()"
       [page]="listado.datos()"
       [rowId]="ventaId"
       [cargando]="listado.cargando()"
@@ -105,6 +108,10 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
 })
 export class VentasPageComponent {
   private readonly repo = inject(VENTAS_REPOSITORY);
+  private readonly empresa = inject(EmpresaService);
+
+  /** Without the credit module every sale is cash: no type filter, no balance column, no «pending» or «written off» states. */
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
 
   protected readonly texto = textoConEspera();
   protected readonly estado = signal<'' | EstadoPago>('');
@@ -113,7 +120,7 @@ export class VentasPageComponent {
   protected readonly hasta = signal('');
   protected readonly seleccionada = signal<number | null>(null);
 
-  protected readonly estados: readonly EstadoPago[] = ['PAGADA', 'PENDIENTE', 'ANULADA', 'CASTIGADA'];
+  protected readonly estados = computed<readonly EstadoPago[]>(() => (this.creditoActivo() ? ['PAGADA', 'PENDIENTE', 'ANULADA', 'CASTIGADA'] : ['PAGADA', 'ANULADA']));
   protected readonly chip = chipEstadoPago;
   protected readonly tipoTexto = etiquetaTipoVenta;
   protected readonly cop = formatoCop;
@@ -131,7 +138,7 @@ export class VentasPageComponent {
     sort: 'fecha_venta,desc',
   });
 
-  protected readonly columnas: DataTableColumn<Venta>[] = [
+  private readonly columnasTodas: DataTableColumn<Venta>[] = [
     { key: 'id_venta', label: 'N.º', value: (v) => v.id_venta },
     { key: 'fecha_venta', label: 'Fecha', value: (v) => v.fecha_venta },
     { key: 'cliente', label: 'Cliente', value: (v) => v.cliente },
@@ -141,7 +148,8 @@ export class VentasPageComponent {
     { key: 'estado_pago', label: 'Estado', value: (v) => v.estado_pago },
     { key: 'acciones', label: 'Detalle', sortable: false, value: () => '' },
   ];
-  protected readonly columnasCsv: ColumnaCsv<Venta>[] = [
+  protected readonly columnas = computed(() => (this.creditoActivo() ? this.columnasTodas : this.columnasTodas.filter((c) => c.key !== 'saldo_pendiente' && c.key !== 'tipo_venta')));
+  private readonly columnasCsvTodas: ColumnaCsv<Venta>[] = [
     { titulo: 'N.º', valor: (v) => v.id_venta },
     { titulo: 'Fecha', valor: (v) => fechaCsv(v.fecha_venta) },
     { titulo: 'Cliente', valor: (v) => v.cliente },
@@ -153,6 +161,7 @@ export class VentasPageComponent {
     { titulo: 'Saldo pendiente', valor: (v) => v.saldo_pendiente },
     { titulo: 'Estado', valor: (v) => chipEstadoPago(v.estado_pago).texto },
   ];
+  protected readonly columnasCsv = computed(() => (this.creditoActivo() ? this.columnasCsvTodas : this.columnasCsvTodas.filter((c) => c.titulo !== 'Saldo pendiente' && c.titulo !== 'Tipo')));
   /** Every sale that matches the filters on screen (not only the page shown). */
   protected readonly todas = () => todasParaExportar((q) => this.repo.listar({ ...this.listado.consulta(), ...q }));
   protected readonly ventaId = (v: Venta) => v.id_venta;

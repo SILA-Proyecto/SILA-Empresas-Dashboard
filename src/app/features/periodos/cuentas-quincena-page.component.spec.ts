@@ -3,6 +3,8 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { provideNgIconLoader } from '@ng-icons/core';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { MODULOS_OPCIONALES, type CodigoModulo } from '../../core/empresa/empresa.models';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 import { CUENTAS_PROVEEDORES_REPOSITORY } from '../cuentas-proveedores/data/cuentas-proveedores.provider';
 import { PERIODOS_REPOSITORY } from './data/periodos.provider';
 import type { Periodo } from './models/periodos.models';
@@ -33,11 +35,12 @@ describe('CuentasQuincenaPageComponent', () => {
 
   const LINEA = { id_periodo: 19, anio: 2026, mes: 10, quincena: 1, id_proveedor: 3, proveedor: 'Finca La Pradera', numero_compras: 2, valor_compras: 500000, valor_pagado: 300000, saldo: 200000 };
 
-  async function crear(periodo: Periodo, lineas: unknown[] = [], todas: Periodo[] = [periodo]): Promise<ComponentFixture<CuentasQuincenaPageComponent>> {
+  async function crear(periodo: Periodo, lineas: unknown[] = [], todas: Periodo[] = [periodo], activos: readonly CodigoModulo[] = MODULOS_OPCIONALES): Promise<ComponentFixture<CuentasQuincenaPageComponent>> {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideNgIconLoader(async () => ''),
+        provideEmpresaFalsa(activos),
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ id: '19' }) }, paramMap: of(convertToParamMap({ id: '19' })) } },
         { provide: PERIODOS_REPOSITORY, useValue: { obtener: vi.fn(() => of(periodo)), listar: vi.fn((q: { anio: number }) => of({ items: todas.filter((p) => p.anio === q.anio), total: 0, page: 0, size: 50 })) } },
         { provide: CUENTAS_PROVEEDORES_REPOSITORY, useValue: { resumen: vi.fn(() => of({ items: lineas, total: lineas.length, page: 0, size: 10 })) } },
@@ -73,6 +76,21 @@ describe('CuentasQuincenaPageComponent', () => {
     // La caja negativa va en rojo (y con su signo).
     expect(raiz.querySelector('[data-testid=valor-caja] .text-destructive')).toBeTruthy();
     expect(raiz.querySelector('[data-testid=valor-resultado] .text-destructive')).toBeNull();
+  });
+
+  it('sin el módulo RESULTADO_QUINCENA: ni resultado ni caja ni cartera castigada (vienen en null), sin $0; las cuentas siguen', async () => {
+    const sinResultado = { ...PERIODO, ...{ ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null } };
+    const f = await crear(sinResultado, [], [sinResultado], MODULOS_OPCIONALES.filter((m) => m !== 'RESULTADO_QUINCENA'));
+    const raiz = f.nativeElement as HTMLElement;
+
+    expect(raiz.querySelector('[data-testid=tarjeta-resultado]')).toBeNull();
+    expect(raiz.querySelector('[data-testid=tarjeta-caja]')).toBeNull();
+    expect(raiz.querySelector('[data-testid=explicacion-resultado]')).toBeNull();
+    expect(raiz.querySelector('[data-testid=explicacion-caja]')).toBeNull();
+    expect(texto(f, 'section[aria-labelledby=bloque-ventas]')).not.toContain('Cartera castigada');
+    expect(raiz.textContent).not.toMatch(/\$\s?0(?![\d.])/);
+    expect(texto(f, 'section[aria-labelledby=bloque-ventas]')).toContain('Total vendido');
+    expect(raiz.querySelector('[data-testid=explicacion-compras]')).toBeTruthy();
   });
 
   it('el bloque de compras y proveedores destaca lo que falta por pagar', async () => {

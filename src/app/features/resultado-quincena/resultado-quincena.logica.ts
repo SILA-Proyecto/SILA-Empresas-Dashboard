@@ -1,4 +1,7 @@
+import { tieneResultado, type PeriodoConResultado } from '../periodos/con-resultado';
 import type { Periodo } from '../periodos/models/periodos.models';
+
+export type { PeriodoConResultado } from '../periodos/con-resultado';
 
 /** One line of a cascade: `signo` says how it enters the total; `detalle` lines are a part of the one above. */
 export interface LineaCascada {
@@ -17,8 +20,12 @@ export interface Cascada {
 
 const redondear = (n: number) => Math.round(n * 100) / 100;
 
+export function conResultado(periodos: readonly Periodo[]): readonly PeriodoConResultado[] | null {
+  return periodos.every(tieneResultado) ? (periodos as readonly PeriodoConResultado[]) : null;
+}
+
 /** What the quincena EARNED: sales (no IVA) − production cost − expenses − written-off portfolio = `resultado_estimado`. */
-export function cascadaResultado(p: Periodo): Cascada {
+export function cascadaResultado(p: PeriodoConResultado): Cascada {
   return {
     total: p.resultado_estimado,
     lineas: [
@@ -31,7 +38,7 @@ export function cascadaResultado(p: Periodo): Cascada {
 }
 
 /** The CASH that came in and went out: collected − paid to providers − cash purchases − expenses = `caja_neta`. */
-export function cascadaCaja(p: Periodo): Cascada {
+export function cascadaCaja(p: PeriodoConResultado): Cascada {
   return {
     total: p.caja_neta,
     lineas: [
@@ -56,7 +63,7 @@ export function haEmpezado(p: Pick<Periodo, 'fecha_inicio'>, hoy: string): boole
 }
 
 /** A future quincena with nothing in it: drawn faded in the chart. */
-export function esAtenuada(p: Periodo, hoy: string): boolean {
+export function esAtenuada(p: PeriodoConResultado, hoy: string): boolean {
   return !haEmpezado(p, hoy) && p.resultado_estimado === 0 && p.caja_neta === 0;
 }
 
@@ -70,7 +77,7 @@ export function anioPorDefecto(anios: readonly number[], actual: Pick<Periodo, '
  * The quincena to select in a year: the current one if it is in that year; otherwise the LAST one that already started;
  * if none started (a future year), the first. Empty year: `null`.
  */
-export function quincenaPorDefecto(periodos: readonly Periodo[], actual: Pick<Periodo, 'id_periodo'> | null, hoy: string): Periodo | null {
+export function quincenaPorDefecto<T extends Pick<Periodo, 'id_periodo' | 'fecha_inicio'>>(periodos: readonly T[], actual: Pick<Periodo, 'id_periodo'> | null, hoy: string): T | null {
   if (periodos.length === 0) return null;
   const deHoy = actual ? periodos.find((p) => p.id_periodo === actual.id_periodo) : undefined;
   if (deHoy) return deHoy;
@@ -88,9 +95,9 @@ export interface TotalesAnio {
 }
 
 /** Totals of the year: ONLY the quincenas that already started (the future ones are all zeros anyway). */
-export function totalesAnio(periodos: readonly Periodo[], hoy: string): TotalesAnio {
+export function totalesAnio(periodos: readonly PeriodoConResultado[], hoy: string): TotalesAnio {
   const empezadas = periodos.filter((p) => haEmpezado(p, hoy));
-  const suma = (campo: keyof Periodo) => redondear(empezadas.reduce((s, p) => s + ((p[campo] as number) ?? 0), 0));
+  const suma = (campo: keyof PeriodoConResultado) => redondear(empezadas.reduce((s, p) => s + ((p[campo] as number) ?? 0), 0));
   return {
     quincenas: empezadas.length,
     ingresos_ventas: suma('ingresos_ventas'),
@@ -109,7 +116,7 @@ export function etiquetaCorta(mes: number, quincena: number): string {
 }
 
 /** Index of the neighbour of the selected quincena (−1 before, +1 after), or `null` at the ends of the year. */
-export function vecina(periodos: readonly Periodo[], idSeleccionada: number | null, paso: -1 | 1): Periodo | null {
+export function vecina<T extends Pick<Periodo, 'id_periodo'>>(periodos: readonly T[], idSeleccionada: number | null, paso: -1 | 1): T | null {
   const i = periodos.findIndex((p) => p.id_periodo === idSeleccionada);
   return i < 0 ? null : (periodos[i + paso] ?? null);
 }

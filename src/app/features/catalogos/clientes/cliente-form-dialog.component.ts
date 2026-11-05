@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, e
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService, isApiError } from '../../../core/api/api-error';
+import { EmpresaService } from '../../../core/empresa/empresa.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AvisoLegalComponent } from '../../../shared/ui/aviso-legal/aviso-legal.component';
 import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
 import { SilaValidators, limpiarTexto } from '../../../shared/validators/sila-validators';
@@ -12,12 +14,13 @@ import { Cliente, ClienteGuardar, TIPOS_DOCUMENTO, TipoDocumento } from '../mode
 @Component({
   selector: 'app-cliente-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [AvisoLegalComponent, DialogComponent, FormFieldComponent, ReactiveFormsModule],
   templateUrl: './cliente-form-dialog.component.html',
 })
 export class ClienteFormDialogComponent {
   private readonly repo = inject(CATALOGOS_REPOSITORY);
   private readonly auth = inject(AuthService);
+  private readonly empresa = inject(EmpresaService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -31,6 +34,8 @@ export class ClienteFormDialogComponent {
 
   protected readonly tiposDocumento = TIPOS_DOCUMENTO;
   protected readonly esAdmin = computed(() => this.auth.rol() === 'ADMIN');
+  /** The credit limit only exists for companies with the credit module. */
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
   protected readonly titulo = computed(() => (this.cliente() ? 'Editar cliente' : 'Nuevo cliente'));
   protected readonly guardando = signal(false);
   protected readonly errorGeneral = signal<string | null>(null);
@@ -69,7 +74,7 @@ export class ClienteFormDialogComponent {
         this.form.controls.tipo_documento.enable();
         this.form.controls.numero_documento.enable();
       }
-      if (this.esAdmin()) {
+      if (this.esAdmin() && this.creditoActivo()) {
         this.form.controls.limite_credito.enable();
       } else {
         this.form.controls.limite_credito.disable();
@@ -93,7 +98,7 @@ export class ClienteFormDialogComponent {
       telefono: valor.telefono.trim(),
       direccion: limpiarTexto(valor.direccion),
       // Only ADMIN sends the credit limit; the procedure rejects it from OPERATIVO (20008).
-      ...(this.esAdmin() ? { limite_credito: Number(valor.limite_credito) } : {}),
+      ...(this.esAdmin() && this.creditoActivo() ? { limite_credito: Number(valor.limite_credito) } : {}),
     };
     const actual = this.cliente();
     const peticion = actual ? this.repo.actualizarCliente(actual.id_cliente, datos) : this.repo.crearCliente(datos);

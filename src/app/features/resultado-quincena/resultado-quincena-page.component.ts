@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { tap } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { EsMovilService } from '../../shared/services/es-movil.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { MontoComponent } from '../../shared/ui/monto/monto.component';
@@ -13,11 +14,10 @@ import { hoyColombia } from '../../shared/utils/fecha-co';
 import { formatoCop, formatoFecha, formatoNumero } from '../../shared/utils/formato-co';
 import { GASTOS_REPOSITORY } from '../gastos/data/gastos.provider';
 import { PERIODOS_REPOSITORY } from '../periodos/data/periodos.provider';
-import type { Periodo } from '../periodos/models/periodos.models';
 import { etiquetaQuincena } from '../periodos/periodos.format';
 import { horaCo } from '../tablero/tablero.format';
 import { ResultadoAnioChartComponent } from './resultado-anio-chart.component';
-import { anioPorDefecto, cascadaCaja, cascadaResultado, esAtenuada, etiquetaCorta, quincenaPorDefecto, totalesAnio, vecina } from './resultado-quincena.logica';
+import { anioPorDefecto, cascadaCaja, cascadaResultado, conResultado, esAtenuada, etiquetaCorta, quincenaPorDefecto, totalesAnio, vecina, type PeriodoConResultado } from './resultado-quincena.logica';
 
 /** A resource that has not answered yet. After the first answer it is never "pending" again (it "reloads"). */
 function pendiente(estado: string): boolean {
@@ -54,6 +54,8 @@ function pendiente(estado: string): boolean {
       </div>
     } @else if (!iniciado()) {
       <p class="text-sm text-muted-foreground" aria-busy="true" data-testid="cargando-resultado">Cargando…</p>
+    } @else if (sinResultado()) {
+      <div role="status" class="sila-card p-6 text-center text-sm" data-testid="resultado-inactivo">El resultado por quincena no está activo para su empresa.</div>
     } @else if (anio() === null) {
       <div class="sila-card p-8 text-center text-sm" data-testid="sin-quincenas">
         <p class="mb-1 font-medium">Todavía no hay quincenas creadas.</p>
@@ -159,11 +161,15 @@ function pendiente(estado: string): boolean {
             <div class="flex justify-between gap-3"><dt class="font-medium">Por pagar a proveedores</dt><dd class="font-semibold tabular-nums" data-testid="leche-por-pagar">{{ cop(p.por_pagar_proveedores) }}</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Litros recibidos (aprobados)</dt><dd class="tabular-nums">{{ numero(p.leche_litros) }} L</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Litros rechazados</dt><dd class="tabular-nums">{{ numero(p.leche_litros_rechazados) }} L</dd></div>
-            <div class="flex justify-between gap-3"><dt class="font-medium">Cartera pendiente</dt><dd class="font-semibold tabular-nums" data-testid="cartera-pendiente">{{ cop(p.cartera_pendiente) }}</dd></div>
+            @if (creditoActivo()) {
+              <div class="flex justify-between gap-3"><dt class="font-medium">Cartera pendiente</dt><dd class="font-semibold tabular-nums" data-testid="cartera-pendiente">{{ cop(p.cartera_pendiente) }}</dd></div>
+            }
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Total vendido (con IVA)</dt><dd class="tabular-nums">{{ cop(p.total_vendido) }}</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">IVA de las ventas</dt><dd class="tabular-nums">{{ cop(p.iva_ventas) }}</dd></div>
             <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Ventas de contado</dt><dd class="tabular-nums">{{ cop(p.ventas_contado) }}</dd></div>
-            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Ventas a crédito</dt><dd class="tabular-nums">{{ cop(p.ventas_credito) }}</dd></div>
+            @if (creditoActivo()) {
+              <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Ventas a crédito</dt><dd class="tabular-nums">{{ cop(p.ventas_credito) }}</dd></div>
+            }
           </dl>
         </section>
 
@@ -301,6 +307,9 @@ export class ResultadoQuincenaPageComponent {
   private readonly repo = inject(PERIODOS_REPOSITORY);
   private readonly gastosRepo = inject(GASTOS_REPOSITORY);
   private readonly errores = inject(ApiErrorService);
+  private readonly empresa = inject(EmpresaService);
+  /** Without the credit module there is no portfolio and no credit sales to show. */
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
   protected readonly movil = inject(EsMovilService).movil;
 
   protected readonly cop = formatoCop;
@@ -335,11 +344,14 @@ export class ResultadoQuincenaPageComponent {
     params: () => this.anio() ?? undefined,
     stream: ({ params }) => this.repo.listar({ anio: params, page: 0, size: 50 }).pipe(tap(() => this.cargadoEn.set(new Date()))),
   });
-  protected readonly lista = computed<readonly Periodo[] | null>(() => (this.periodos.hasValue() ? this.periodos.value().items : null));
+  /** The quincenas of the year with their result, or `null` while loading or if they came without it (see `sinResultado`). */
+  protected readonly lista = computed<readonly PeriodoConResultado[] | null>(() => (this.periodos.hasValue() ? conResultado(this.periodos.value().items) : null));
+  /** The module was switched off while the screen was open: the figures came as `null`. Never drawn as $0. */
+  protected readonly sinResultado = computed(() => this.periodos.hasValue() && this.lista() === null);
 
   /** The one the person picked; it resets when the year changes. */
   private readonly elegida = linkedSignal<number | null, number | null>({ source: () => this.anio(), computation: () => null });
-  protected readonly seleccionada = computed<Periodo | null>(() => {
+  protected readonly seleccionada = computed<PeriodoConResultado | null>(() => {
     const lista = this.lista();
     if (!lista) return null;
     return lista.find((p) => p.id_periodo === this.elegida()) ?? quincenaPorDefecto(lista, this.periodoActual(), this.hoy());
@@ -365,22 +377,22 @@ export class ResultadoQuincenaPageComponent {
     return e ? this.errores.describe(e).mensaje : '';
   });
 
-  protected atenuada(p: Periodo): boolean {
+  protected atenuada(p: PeriodoConResultado): boolean {
     return esAtenuada(p, this.hoy());
   }
 
   /** On a phone the list of the year hides the quincenas with nothing in them (the chosen one always shows). */
   protected readonly verSinMovimiento = signal(false);
 
-  private conMovimiento(p: Periodo): boolean {
+  private conMovimiento(p: PeriodoConResultado): boolean {
     return p.id_periodo === this.seleccionada()?.id_periodo || [p.ingresos_ventas, p.resultado_estimado, p.caja_neta, p.por_pagar_proveedores, p.cartera_pendiente].some((v) => v !== 0);
   }
 
-  protected visiblesMovil(periodos: readonly Periodo[]): readonly Periodo[] {
+  protected visiblesMovil(periodos: readonly PeriodoConResultado[]): readonly PeriodoConResultado[] {
     return this.verSinMovimiento() ? periodos : periodos.filter((p) => this.conMovimiento(p));
   }
 
-  protected sinMovimiento(periodos: readonly Periodo[]): number {
+  protected sinMovimiento(periodos: readonly PeriodoConResultado[]): number {
     return periodos.filter((p) => !this.conMovimiento(p)).length;
   }
 
@@ -392,7 +404,7 @@ export class ResultadoQuincenaPageComponent {
     this.elegida.set(id);
   }
 
-  protected ir(p: Periodo | null): void {
+  protected ir(p: PeriodoConResultado | null): void {
     if (p) this.elegida.set(p.id_periodo);
   }
 

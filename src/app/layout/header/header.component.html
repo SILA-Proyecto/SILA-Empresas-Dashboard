@@ -23,8 +23,20 @@
         aria-label="Cambiar entre modo claro y oscuro"
         (click)="toggleColorScheme()"
       >
-        <app-icon name="lucideMoon" class="h-4 w-4" [class.hidden]="theme.mode() === 'dark'" />
-        <app-icon name="lucideSun" class="h-4 w-4" [class.hidden]="theme.mode() !== 'dark'" />
+        <app-icon name="lucideMoon" class="h-4 w-4" [class.hidden]="theme.isDark()" />
+        <app-icon name="lucideSun" class="h-4 w-4" [class.hidden]="!theme.isDark()" />
+      </button>
+
+      <button
+        type="button"
+        class="flex h-11 w-11 items-center justify-center rounded-lg lg:h-10 lg:w-10 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="Personalizar la apariencia"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="customizer.open()"
+        data-testid="apariencia-abrir"
+        (click)="customizer.toggle()"
+      >
+        <app-icon name="lucidePalette" class="h-4 w-4" />
       </button>
 
       <app-notificaciones-campana />

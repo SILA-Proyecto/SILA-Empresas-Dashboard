@@ -8,6 +8,8 @@ export interface Sesion {
   email: string;
   rol: Rol;
   mfa_activo: boolean;
+  /** 16 characters that change with the profile photo; `null` = no photo (the initials are shown). */
+  foto_version?: string | null;
 }
 
 /**

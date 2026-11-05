@@ -14,6 +14,9 @@ import type { Tablero } from './models/tablero.models';
 import { INTERVALO_TABLERO_MS, TableroPageComponent } from './tablero-page.component';
 import { VentasSemanaChartComponent } from './ventas-semana-chart.component';
 import { instalarInterseccionFalsa } from '../../shared/testing/interseccion-falsa';
+import { EmpresaService } from '../../core/empresa/empresa.service';
+import { MODULOS_OPCIONALES } from '../../core/empresa/empresa.models';
+import { crearEmpresaFalsa, provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const SEMANA = Array.from({ length: 7 }, (_, i) => ({ fecha: `2026-10-${String(8 + i).padStart(2, '0')}`, total: i === 2 ? 0 : 50000 * (i + 1), cantidad: i === 2 ? 0 : i + 1 }));
 const ALERTA = (n: number, severidad: 'CRITICA' | 'ADVERTENCIA') => ({ clave: `K${n}`, tipo: 'INSUMO_AGOTADO', severidad, titulo: `Alerta ${n}`, detalle: `Detalle ${n}`, entidad: 'INSUMO', id_entidad: n, fecha: null });
@@ -60,6 +63,7 @@ describe('Tablero', () => {
     repo = { obtener: vi.fn(() => of(TABLERO)) };
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideNgIconLoader(async () => ''),
         provideRouter([]),
         PROVEEDOR_TEMA,
@@ -224,7 +228,7 @@ describe('Tablero', () => {
       const textoAdmin = limpio(a.el.querySelector('[aria-labelledby=tb-hoy]')?.textContent) + limpio(a.el.querySelector('[aria-label="Cartera, inventario y proveedores"]')?.textContent);
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
-        providers: [provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: TABLERO_REPOSITORY, useValue: repo }, { provide: NOTIFICACIONES_REPOSITORY, useValue: { listar: vi.fn(() => of({ total: 0, criticas: 0, items: [] })) } }],
+        providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), PROVEEDOR_TEMA, { provide: TABLERO_REPOSITORY, useValue: repo }, { provide: NOTIFICACIONES_REPOSITORY, useValue: { listar: vi.fn(() => of({ total: 0, criticas: 0, items: [] })) } }],
       });
       sinApex();
       const o = await pagina('OPERATIVO');
@@ -344,6 +348,94 @@ describe('Tablero', () => {
       expect(el.querySelector('[data-testid=cartera-saldo]')).toBeTruthy();
     });
   });
+
+  describe('módulos de la empresa', () => {
+    const sinCredito: Tablero = { ...TABLERO, hoy: { ...TABLERO.hoy, ventas_credito: null }, cartera: null };
+
+    it('con CREDITO: muestra el bloque de cartera, «Crédito» del día y «Vendido / cobrado»', async () => {
+      const { el } = await pagina();
+
+      expect(el.querySelector('[data-testid=cartera-saldo]')).toBeTruthy();
+      expect(limpio(el.textContent)).toContain('Vendido / cobrado');
+      expect(limpio(el.textContent)).toContain('Crédito $ 17.114');
+    });
+
+    it('sin CREDITO: el backend manda cartera y ventas_credito en null y la pantalla no los muestra ni se rompe', async () => {
+      TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'CREDITO')) });
+      repo.obtener.mockReturnValue(of(sinCredito));
+      const { el } = await pagina();
+      const texto = limpio(el.textContent);
+
+      expect(el.querySelector('[data-testid=cartera-saldo]')).toBeNull();
+      expect(texto).not.toContain('Cartera');
+      expect(texto).not.toContain('Ver cartera');
+      expect(texto).not.toContain('Vendido / cobrado');
+      expect(texto).not.toContain('Crédito $');
+      expect(texto).toContain('12 ventas');
+    });
+
+    it('sin CREDITO: el diseño se reacomoda (tres tarjetas de quincena y dos bloques abajo, sin huecos)', async () => {
+      TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'CREDITO')) });
+      repo.obtener.mockReturnValue(of(sinCredito));
+      const { el } = await pagina();
+      const tarjetasQuincena = el.querySelector('[aria-labelledby=tb-quincena] .grid')!;
+      const bloques = el.querySelector('[aria-label="Cartera, inventario y proveedores"] .grid')!;
+
+      expect(tarjetasQuincena.children).toHaveLength(3);
+      expect(tarjetasQuincena.classList.contains('xl:grid-cols-3')).toBe(true);
+      expect(bloques.children).toHaveLength(2);
+      expect(bloques.classList.contains('lg:grid-cols-2')).toBe(true);
+    });
+
+    it('sin CREDITO: la fórmula del resultado no menciona la cartera castigada si no hay ninguna', async () => {
+      TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'CREDITO')) });
+      repo.obtener.mockReturnValue(of({ ...sinCredito, quincena: { ...QUINCENA, cartera_castigada: 0 } }));
+      const { el } = await pagina();
+
+      expect(limpio(el.querySelector('[data-testid=tarjeta-resultado]')?.textContent)).not.toContain('cartera castigada');
+    });
+
+    describe('sin RESULTADO_QUINCENA', () => {
+      const SIN_RESULTADO = { ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null };
+
+      it('el backend manda las cifras del resultado en null: no hay tarjetas de resultado ni caja, y nada sale como $0', async () => {
+        TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'RESULTADO_QUINCENA')) });
+        repo.obtener.mockReturnValue(of({ ...TABLERO, quincena: { ...QUINCENA, ...SIN_RESULTADO } }));
+        const { el } = await pagina();
+        const quincena = el.querySelector('[aria-labelledby=tb-quincena]')!;
+        const texto = limpio(quincena.textContent);
+
+        expect(el.querySelector('[data-testid=tarjeta-resultado]')).toBeNull();
+        expect(texto).not.toContain('Resultado estimado');
+        expect(texto).not.toContain('Caja neta');
+        expect(texto).not.toMatch(/\$\s?0(?![\d.])/);
+        // The quincena itself, what was sold and collected and what is owed to suppliers stay.
+        expect(el.querySelector('[data-testid=titulo-quincena]')).toBeTruthy();
+        expect(texto).toContain('Vendido / cobrado');
+        expect(texto).toContain('Proveedores por pagar');
+        const tarjetas = quincena.querySelector('.grid')!;
+        expect(tarjetas.children).toHaveLength(2);
+        expect(tarjetas.classList.contains('xl:grid-cols-2')).toBe(true);
+      });
+
+      it('sin RESULTADO_QUINCENA ni CREDITO sigue mostrando lo vendido y cobrado (si no, se perdería)', async () => {
+        TestBed.overrideProvider(EmpresaService, { useValue: crearEmpresaFalsa(MODULOS_OPCIONALES.filter((m) => m !== 'RESULTADO_QUINCENA' && m !== 'CREDITO')) });
+        repo.obtener.mockReturnValue(of({ ...sinCredito, quincena: { ...QUINCENA, ...SIN_RESULTADO } }));
+        const { el } = await pagina();
+
+        expect(limpio(el.querySelector('[aria-labelledby=tb-quincena]')!.textContent)).toContain('Vendido / cobrado');
+      });
+
+      it('con el módulo encendido todo sigue igual: cuatro tarjetas', async () => {
+        const { el } = await pagina();
+        const tarjetas = el.querySelector('[aria-labelledby=tb-quincena] .grid')!;
+
+        expect(el.querySelector('[data-testid=tarjeta-resultado]')).toBeTruthy();
+        expect(tarjetas.children).toHaveLength(4);
+        expect(tarjetas.classList.contains('xl:grid-cols-4')).toBe(true);
+      });
+    });
+  });
 });
 
 describe('Tablero · ruta raíz', () => {
@@ -361,6 +453,7 @@ describe('Tablero · ruta raíz', () => {
   it('navegar a «/» y a una ruta que no existe termina en /tablero', async () => {
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideNgIconLoader(async () => ''),
         PROVEEDOR_TEMA,
         // The same children as the shell, without its session guard and layout.

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { AvisoLegalComponent } from '../../shared/ui/aviso-legal/aviso-legal.component';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ACCEPT_SUBIDA, describirFalloSubida, formatoTamano, validarArchivoParaSubir } from './archivos.logica';
@@ -25,7 +26,7 @@ let siguiente = 0;
 @Component({
   selector: 'app-subir-archivos-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, IconComponent],
+  imports: [AvisoLegalComponent, DialogComponent, IconComponent],
   template: `
     <app-dialog [open]="abierto()" title="Subir archivos" [description]="destino()" [wide]="true" [cerrable]="!subiendo()" (closed)="cerrar.emit()">
       <div
@@ -46,6 +47,9 @@ let siguiente = 0;
         </label>
       </div>
       <p class="mt-3 text-xs text-muted-foreground" data-testid="aviso-seguridad">Los archivos se revisan con antivirus, se limpian y se guardan cifrados.</p>
+      <app-aviso-legal class="mt-2" ruta="/legal/terminos" enlace="Términos y condiciones" data-testid="aviso-subida">
+        Sube solo contenido lícito sobre el que tengas derechos y evita datos sensibles o de menores si no son necesarios.
+      </app-aviso-legal>
 
       @if (items().length > 0) {
         <ul class="mt-4 divide-y divide-border rounded-lg border border-border" aria-label="Archivos para subir" data-testid="lista-subida">

@@ -14,6 +14,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { formatoFechaHora } from '../../shared/utils/formato-co';
 import { SilaValidators, limpiarTexto } from '../../shared/validators/sila-validators';
+import { AvisoLegalComponent } from '../../shared/ui/aviso-legal/aviso-legal.component';
 import { CampoCodigoMfaComponent } from './campo-codigo-mfa.component';
 import { describirErrorSensible } from './errores-mfa';
 
@@ -26,13 +27,17 @@ import { describirErrorSensible } from './errores-mfa';
   selector: 'app-passkeys-seccion',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block min-w-0 lg:col-span-2' },
-  imports: [CampoCodigoMfaComponent, ConfirmDialogComponent, DialogComponent, FormFieldComponent, IconComponent, ReactiveFormsModule],
+  imports: [AvisoLegalComponent, CampoCodigoMfaComponent, ConfirmDialogComponent, DialogComponent, FormFieldComponent, IconComponent, ReactiveFormsModule],
   template: `
     <section class="sila-card min-w-0 p-5" aria-labelledby="cuenta-passkeys">
       <h2 id="cuenta-passkeys" class="mb-1 text-base font-semibold">Face ID / huella</h2>
       <p class="mb-4 text-sm text-muted-foreground" data-testid="ayuda-passkeys">
         Tu cara o tu huella nunca salen del teléfono; SILA solo guarda una llave pública. El registro sirve solo en esta dirección web.
       </p>
+
+      <app-aviso-legal class="mb-4" ruta="/legal/politica-privacidad" enlace="Política de privacidad" data-testid="aviso-passkeys">
+        Por cada dispositivo SILA guarda una llave pública, su nombre y su tipo. La biometría no sale de tu dispositivo.
+      </app-aviso-legal>
 
       @if (!mfaActivo()) {
         <p class="rounded-md bg-muted px-3 py-2 text-sm" data-testid="requiere-mfa">

@@ -25,6 +25,12 @@ describe('explicarQuincena', () => {
     expect(caja).toContain('todavía no ha salido de caja');
   });
 
+  it('sin el módulo RESULTADO_QUINCENA (cifras en null) cuenta las compras y la deuda, y calla el resultado y la caja', () => {
+    const frases = explicarQuincena({ ...base, ...{ ingresos_ventas: null, costo_produccion: null, gastos_operativos: null, cartera_castigada: null, resultado_estimado: null, caja_neta: null } });
+    expect(frases.map((f) => f.clave)).toEqual(['compras', 'deuda']);
+    expect(frases.map((f) => f.texto).join(' ')).not.toMatch(/\$\s?0(?![\d.])/);
+  });
+
   it('sin deuda ni compras lo dice y no inventa avisos', () => {
     const p = { ...base, compras_materias_primas: 0, compras_contado: 0, compras_credito: 0, por_pagar_proveedores: 0, caja_neta: 14000, resultado_estimado: 5000 };
     expect(texto(p, 'compras')).toContain('no hubo compras');

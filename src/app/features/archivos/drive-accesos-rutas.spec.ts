@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideNgIconLoader } from '@ng-icons/core';
@@ -13,6 +14,7 @@ import { ARCHIVOS_REPOSITORY } from './data/archivos.provider';
 import { DrivePanelComponent, INTERVALO_DRIVE_MS } from './drive-panel.component';
 import type { AccesoArchivo, EstadoDriveRespuesta } from './models/archivos.models';
 import { estabilizar, limpio, polyfillDialog } from './pruebas.comunes';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const sesion = (rol: Rol) => ({ id_usuario: 1, usuario: 'a', nombre: 'A', email: 'a@example.com', rol, mfa_activo: true });
 const DRIVE_OK: EstadoDriveRespuesta = { configurado: true, conectado: true, cuenta: 'empresa@gmail.com', carpeta: 'SILA-respaldo', pendientes: 3, con_error: 2, subidos: 120, ultimo_error: null, ultima_sincronizacion: '2026-10-14T15:05:00' };
@@ -33,7 +35,7 @@ describe('Panel de Drive (ADMIN)', () => {
     };
     irA = vi.fn<(url: string) => void>();
     vi.spyOn(DrivePanelComponent.prototype as unknown as { irA: (url: string) => void }, 'irA').mockImplementation((url: string) => irA(url));
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
+    TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -83,9 +85,18 @@ describe('Panel de Drive (ADMIN)', () => {
     expect(q('[data-testid=desconectar]')).toBeNull();
   });
 
+  /** The notice of the Google connection: without ticking its box «Conectar» does nothing (see the tests of the notice below). */
+  async function marcarAviso(q: (s: string) => HTMLElement | null, f: ComponentFixture<unknown>): Promise<void> {
+    const casilla = q('[data-testid=aviso-drive-casilla]') as HTMLInputElement;
+    casilla.checked = true;
+    casilla.dispatchEvent(new Event('change'));
+    await estabilizar(f);
+  }
+
   it('«Volver a conectar» pide la dirección y manda a Google (solo https)', async () => {
     const { q, f } = await crear();
     expect(limpio(q('[data-testid=conectar]')!.textContent)).toBe('Volver a conectar');
+    await marcarAviso(q, f);
     q('[data-testid=conectar]')!.click();
     await estabilizar(f);
 
@@ -95,6 +106,7 @@ describe('Panel de Drive (ADMIN)', () => {
   it.each(['javascript:alert(1)', 'http://accounts.google.com/x', 'data:text/html,x'])('NO sigue la dirección %s', async (url) => {
     repo['driveAutorizar'].mockReturnValue(of({ url }));
     const { q, f } = await crear();
+    await marcarAviso(q, f);
     q('[data-testid=conectar]')!.click();
     await estabilizar(f);
 
@@ -105,10 +117,26 @@ describe('Panel de Drive (ADMIN)', () => {
     repo['driveAutorizar'].mockReturnValue(throwError(() => ({ code: 20019, message: 'Drive no está configurado.' })));
     const error = vi.spyOn(TestBed.inject(ToastService), 'error');
     const { q, f } = await crear();
+    await marcarAviso(q, f);
     q('[data-testid=conectar]')!.click();
     await estabilizar(f);
 
     expect(error).toHaveBeenCalledWith('Drive no está configurado.', undefined);
+  });
+
+  it('el aviso de Google Drive: enlace a /legal/drive, casilla SIN marcar, y sin marcarla «Conectar» no hace nada', async () => {
+    const { q, f } = await crear();
+
+    expect(q('[data-testid=aviso-drive] a')?.getAttribute('href')).toBe('/legal/drive');
+    expect((q('[data-testid=aviso-drive-casilla]') as HTMLInputElement).checked).toBe(false);
+    expect((q('[data-testid=conectar]') as HTMLButtonElement).disabled).toBe(true);
+    q('[data-testid=conectar]')!.click();
+    await estabilizar(f);
+    expect(repo['driveAutorizar']).not.toHaveBeenCalled();
+    expect(irA).not.toHaveBeenCalled();
+
+    await marcarAviso(q, f);
+    expect((q('[data-testid=conectar]') as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('«Sincronizar ahora» se deshabilita mientras corre y muestra el estado nuevo', async () => {
@@ -181,7 +209,7 @@ describe('Bitácora de accesos (ADMIN)', () => {
 
   beforeEach(() => {
     repo = { accesos: vi.fn(() => of(PAG([acceso(), acceso({ id_acceso: 2, accion: 'SUBIDA_RECHAZADA', id_documento: null, nombre_archivo: null, modo_clave: null, detalle: 'virus.pdf: amenaza detectada Eicar-Test' }), acceso({ id_acceso: 3, accion: 'VER', modo_clave: null })])) ) };
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
+    TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), { provide: ARCHIVOS_REPOSITORY, useValue: repo }] });
   });
 
   async function crear(consulta: Record<string, string> = {}) {
@@ -247,7 +275,7 @@ describe('Bitácora de accesos (ADMIN)', () => {
 describe('Archivos · pestañas y rutas por rol', () => {
   describe('rutas', () => {
     async function ir(rol: Rol | null, url: string): Promise<string> {
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([{ path: '', children: [] }, { path: 'archivos', children: ARCHIVOS_ROUTES }])] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([{ path: '', children: [] }, { path: 'archivos', children: ARCHIVOS_ROUTES }])] });
       if (rol) TestBed.inject(AuthService).sesion.set(sesion(rol));
       const router = TestBed.inject(Router);
       await router.navigateByUrl(url);
@@ -273,7 +301,7 @@ describe('Archivos · pestañas y rutas por rol', () => {
 
   describe('pestañas', () => {
     async function crear(rol: Rol, consulta: Record<string, string> = {}) {
-      TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(consulta) } } }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideNgIconLoader(async () => ''), provideRouter([]), { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(consulta) } } }] });
       TestBed.inject(AuthService).sesion.set(sesion(rol));
       const router = TestBed.inject(Router);
       const navegar = vi.spyOn(router, 'navigate').mockResolvedValue(true);

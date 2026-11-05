@@ -7,6 +7,7 @@ import type { SesionAbierta } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { CuentaPageComponent } from './cuenta-page.component';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const UA_CHROME_WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 const SESIONES: SesionAbierta[] = [
@@ -18,6 +19,7 @@ function crearAuth(mfaActivo: boolean) {
   return {
     sesion: signal({ id_usuario: 1, usuario: 'ana', nombre: 'Ana', email: 'a@example.com', rol: 'ADMIN' as const, mfa_activo: mfaActivo }),
     codigosRestantes: signal<number | null>(null),
+    isAuthenticated: () => true,
     respaldoEstado: vi.fn(() => of({ restantes: 3 })),
     regenerarCodigosRespaldo: vi.fn(() => of({ codigos_respaldo: ['AAAAA-11111', 'BBBBB-22222'] })),
     misSesiones: vi.fn(() => of(SESIONES)),
@@ -50,7 +52,7 @@ describe('CuentaPageComponent', () => {
 
   async function crear(mfaActivo = true): Promise<ComponentFixture<CuentaPageComponent>> {
     auth = crearAuth(mfaActivo);
-    TestBed.configureTestingModule({ providers: [provideRouter([]), provideNgIconLoader(async () => ''), { provide: AuthService, useValue: auth }] });
+    TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideRouter([]), provideNgIconLoader(async () => ''), { provide: AuthService, useValue: auth }] });
     router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(CuentaPageComponent);
@@ -174,7 +176,7 @@ describe('CuentaPageComponent', () => {
     it('con 2 o menos recomienda generar nuevos', async () => {
       auth = crearAuth(true);
       auth.respaldoEstado.mockReturnValue(of({ restantes: 2 }));
-      TestBed.configureTestingModule({ providers: [provideRouter([]), provideNgIconLoader(async () => ''), { provide: AuthService, useValue: auth }] });
+      TestBed.configureTestingModule({ providers: [provideEmpresaFalsa(), provideRouter([]), provideNgIconLoader(async () => ''), { provide: AuthService, useValue: auth }] });
       const f = TestBed.createComponent(CuentaPageComponent);
       await estabilizar(f);
 

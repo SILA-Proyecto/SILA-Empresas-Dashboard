@@ -58,10 +58,15 @@
     <span class="font-mono text-xs">{{ usuario.usuario }}</span>
   </ng-template>
   <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-usuario>
-    <span class="font-medium">{{ usuario.nombre }}</span>
-    @if (esYo(usuario)) {
-      <span class="ms-1 text-xs text-muted-foreground">(tú)</span>
-    }
+    <span class="inline-flex items-center gap-2">
+      <app-avatar [idUsuario]="usuario.id_usuario" [nombre]="usuario.nombre" [fotoVersion]="usuario.foto_version" tamano="xs" [decorativo]="true" />
+      <span>
+        <span class="font-medium">{{ usuario.nombre }}</span>
+        @if (esYo(usuario)) {
+          <span class="ms-1 text-xs text-muted-foreground">(tú)</span>
+        }
+      </span>
+    </span>
   </ng-template>
   <ng-template appDataTableCell="email" [cellRows]="listado.datos()?.items" let-usuario>
     <span class="text-muted-foreground">{{ usuario.email }}</span>
@@ -122,6 +127,12 @@
         <app-icon name="lucideKeyRound" class="size-4" aria-hidden="true" />
         <span class="sr-only">Restablecer clave de {{ usuario.nombre }}</span>
       </button>
+      @if (usuario.foto_version) {
+        <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Quitar foto" (click)="abrirAccion('foto', usuario)">
+          <app-icon name="lucideImageOff" class="size-4" aria-hidden="true" />
+          <span class="sr-only">Quitar la foto de {{ usuario.nombre }}</span>
+        </button>
+      }
       @if (usuario.mfa_activo) {
         <button
           type="button"

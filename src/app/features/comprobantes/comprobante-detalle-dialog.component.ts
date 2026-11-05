@@ -1,3 +1,4 @@
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
@@ -33,7 +34,7 @@ import type { TipoComprobante } from './models/comprobantes.models';
         @let c = d.comprobante;
         <div class="zona-impresion-ticket space-y-4 text-sm" data-testid="comprobante-impreso">
           <div class="hidden print:block">
-            <p class="text-base font-bold">Llanolat · SILA</p>
+            <p class="text-base font-bold">{{ nombreEmpresa() }} · SILA</p>
             <p class="text-xs">Comprobante interno — no es factura electrónica</p>
           </div>
           <dl class="grid gap-x-6 gap-y-2 sm:grid-cols-2">
@@ -216,6 +217,9 @@ import type { TipoComprobante } from './models/comprobantes.models';
 })
 export class ComprobanteDetalleDialogComponent {
   private readonly repo = inject(COMPROBANTES_REPOSITORY);
+  private readonly empresa = inject(EmpresaService);
+  /** Name of the company on the printed voucher. */
+  protected readonly nombreEmpresa = computed(() => this.empresa.nombre() ?? 'SILA');
   private readonly errores = inject(ApiErrorService);
   private readonly archivos = inject(ARCHIVOS_REPOSITORY);
   private readonly visor = inject(VisorArchivosService);

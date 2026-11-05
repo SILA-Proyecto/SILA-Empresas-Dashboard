@@ -1,4 +1,5 @@
 import { Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+import { moduloGuard } from '../../core/empresa/modulo.guard';
 import { roleGuard } from '../../core/auth/role.guard';
 import { arbolDeUrl } from './archivos.rutas-ui';
 
@@ -14,6 +15,7 @@ export function emparejarArbol(segmentos: UrlSegment[]): UrlMatchResult | null {
 export const ARCHIVOS_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [moduloGuard('ARCHIVOS')],
     loadComponent: () => import('./archivos-layout.component').then((m) => m.ArchivosLayoutComponent),
     title: 'Archivos · SILA',
     children: [

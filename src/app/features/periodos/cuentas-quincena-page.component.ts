@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { AyudaComponent } from '../../shared/ui/ayuda/ayuda.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -20,6 +21,7 @@ import type { PagoProveedor, ResumenProveedorQuincena } from '../cuentas-proveed
 import { PagoProveedorDialogComponent } from '../cuentas-proveedores/pago-proveedor-dialog.component';
 import { compararQuincenas, quincenaAnterior } from './comparacion-quincena';
 import { PERIODOS_REPOSITORY } from './data/periodos.provider';
+import { tieneResultado } from './con-resultado';
 import { explicarQuincena } from './explicacion-quincena';
 import type { Periodo } from './models/periodos.models';
 import { etiquetaQuincena } from './periodos.format';
@@ -186,6 +188,7 @@ interface Fila {
         </section>
       }
 
+      @if (conResultado(); as p) {
       <section class="mt-6" aria-labelledby="bloque-resultado">
         <h2 id="bloque-resultado" class="mb-3 text-base font-semibold">Resultado y caja</h2>
         <div class="grid gap-6 lg:grid-cols-2">
@@ -218,6 +221,7 @@ interface Fila {
           El costo de las materias primas entra en el resultado al producir; lo que se debe a proveedores se ve aparte. Estas dos cifras miran cosas distintas: no se suman.
         </p>
       </section>
+      }
     } @else {
       <p class="text-sm text-muted-foreground" aria-busy="true">Cargando las cuentas…</p>
     }
@@ -235,6 +239,7 @@ export class CuentasQuincenaPageComponent {
   private readonly cuentasRepo = inject(CUENTAS_PROVEEDORES_REPOSITORY);
   private readonly errores = inject(ApiErrorService);
   private readonly toast = inject(ToastService);
+  private readonly empresa = inject(EmpresaService);
 
   private readonly route = inject(ActivatedRoute);
   /** Route parameter `:id`. */
@@ -266,6 +271,11 @@ export class CuentasQuincenaPageComponent {
     return anterior ? { lineas: compararQuincenas(actual, anterior), etiquetaAnterior: `${etiquetaQuincena(anterior.mes, anterior.quincena)} de ${anterior.anio}` } : null;
   });
   protected readonly abs = Math.abs;
+  /** The quincena with its result figures, or `null` when the RESULTADO_QUINCENA module is off (the block is hidden). */
+  protected readonly conResultado = computed(() => {
+    const p = this.periodo.hasValue() ? this.periodo.value() : null;
+    return p && tieneResultado(p) ? p : null;
+  });
 
   protected readonly verProveedores = signal(false);
   protected readonly explicacion = computed(() => (this.periodo.hasValue() ? explicarQuincena(this.periodo.value()) : []));
@@ -279,6 +289,8 @@ export class CuentasQuincenaPageComponent {
   protected readonly ventas = computed<Fila[]>(() => {
     const p = this.periodo.hasValue() ? this.periodo.value() : null;
     if (!p) return [];
+    // Without the credit module there are no credit sales, collections or portfolio to list.
+    const credito = this.empresa.activo('CREDITO');
     return [
       { etiqueta: 'Total vendido (con IVA)', valor: p.total_vendido, dinero: true, destacada: true, ayuda: 'Todas las ventas de la quincena con IVA, sin contar las anuladas.' },
       { etiqueta: 'De contado', valor: p.ventas_contado, dinero: true, detalle: true, ayuda: 'Ventas que se pagaron en el momento.' },
@@ -287,8 +299,9 @@ export class CuentasQuincenaPageComponent {
       { etiqueta: 'Contado cobrado', valor: p.cobrado_contado, dinero: true, detalle: true, ayuda: 'Pagos recibidos de ventas de contado de esta quincena.' },
       { etiqueta: 'Abonos de cartera', valor: p.cobrado_abonos, dinero: true, detalle: true, ayuda: 'Abonos recibidos en esta quincena, aunque sean de ventas de otra.' },
       { etiqueta: 'Cartera pendiente de esta quincena', valor: p.cartera_pendiente, dinero: true, ayuda: 'Lo que los clientes aún deben de las ventas a crédito de esta quincena.' },
-      { etiqueta: 'Cartera castigada', valor: p.cartera_castigada, dinero: true, ayuda: 'Deuda dada de baja como incobrable. Resta en el resultado.' },
-    ];
+      // `null` = the RESULTADO_QUINCENA module is off: the row goes (never shown as $0).
+      ...(p.cartera_castigada === null ? [] : [{ etiqueta: 'Cartera castigada', valor: p.cartera_castigada, dinero: true, ayuda: 'Deuda dada de baja como incobrable. Resta en el resultado.' }]),
+    ].filter((f) => credito || !['A crédito', 'Abonos de cartera', 'Cartera pendiente de esta quincena'].includes(f.etiqueta) && !(f.etiqueta === 'Cartera castigada' && p.cartera_castigada === 0));
   });
 
   protected readonly compras = computed<Fila[]>(() => {

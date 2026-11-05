@@ -1,9 +1,13 @@
 import { ChangeDetectionStrategy, Component, DOCUMENT, ElementRef, afterRenderEffect, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { AsistenteService, LARGO_MAXIMO_MENSAJE } from './asistente.service';
 import { type EjemploAsistente, ejemplosPara } from './ejemplos-asistente';
 import { analizarTexto } from './texto-asistente';
+
+/** Key of «this user already read the AI notice in this tab». Not evidence of anything (see `avisoVisto`). */
+export const CLAVE_AVISO_IA = 'sila_aviso_ia';
 
 /**
  * Floating help bubble, on every screen once the session is open (the shell hosts it).
@@ -13,7 +17,7 @@ import { analizarTexto } from './texto-asistente';
 @Component({
   selector: 'app-asistente-burbuja',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent],
+  imports: [IconComponent, RouterLink],
   host: { '(document:keydown.escape)': 'cerrarConEscape()' },
   template: `
     @if (!abierto()) {
@@ -141,6 +145,18 @@ import { analizarTexto } from './texto-asistente';
           }
         </div>
 
+        @if (!avisoVisto()) {
+          <div class="shrink-0 border-t border-border bg-muted px-3 py-2 text-xs leading-snug" data-testid="asistente-aviso-ia">
+            <p>
+              Tus preguntas y los datos que el asistente lee con tu mismo rol se procesan con un servicio de inteligencia artificial. Puede equivocarse. No escribas datos sensibles ni de menores.
+              <a routerLink="/legal/ia" target="_blank" rel="noopener" class="font-medium underline underline-offset-2">Leer el aviso<span class="sr-only"> (se abre en una pestaña nueva)</span></a>
+            </p>
+            <label class="mt-1 flex min-h-11 items-center gap-2 sm:min-h-8">
+              <input type="checkbox" class="size-4 shrink-0" data-testid="asistente-aviso-casilla" [checked]="false" (change)="marcarAviso($any($event.target).checked)" />
+              He leído el aviso y quiero usar el asistente.
+            </label>
+          </div>
+        }
         <form class="shrink-0 border-t border-border bg-card p-3" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))" (submit)="enviar($event)">
           <div class="flex items-end gap-2">
             <label class="sr-only" for="asistente-texto">Escribe tu pregunta</label>
@@ -172,7 +188,7 @@ import { analizarTexto } from './texto-asistente';
               Tu pregunta tiene {{ borrador().trim().length }} caracteres y el máximo es {{ maximo }}. Acórtala para enviarla.
             </p>
           }
-          <p class="mt-2 text-[11px] leading-snug text-muted-foreground">El asistente solo consulta; no puede cambiar datos. Puede equivocarse: verifica las cifras importantes.</p>
+          <p class="mt-2 text-[11px] leading-snug text-muted-foreground" data-testid="asistente-advertencia">El asistente solo consulta; no puede cambiar datos. Puede equivocarse: verifica las cifras importantes. No ingreses datos sensibles ni de menores.</p>
         </form>
       </section>
     }
@@ -197,7 +213,13 @@ export class AsistenteBurbujaComponent {
     this.servicio.mensajes().map((m) => ({ ...m, bloques: m.de === 'asistente' ? analizarTexto(m.texto) : [] })),
   );
   protected readonly demasiado = computed(() => this.borrador().trim().length > LARGO_MAXIMO_MENSAJE);
-  protected readonly puedeEnviar = computed(() => this.borrador().trim().length > 0 && !this.demasiado() && !this.servicio.enviando());
+  /**
+   * The notice of the AI service. It is a barrier of the INTERFACE, not evidence: the backend does not record it yet (see
+   * docs/legal/PENDIENTES_BACKEND.md, point 1). It is remembered only while this tab lives (`sessionStorage`) and only for
+   * this user, so another person on the same tab is asked again.
+   */
+  protected readonly avisoVisto = signal(this.leerAviso());
+  protected readonly puedeEnviar = computed(() => this.avisoVisto() && this.borrador().trim().length > 0 && !this.demasiado() && !this.servicio.enviando());
 
   /** Whether the panel was closed by the person: then the focus goes back to the bubble. */
   private devolverFoco = false;
@@ -265,7 +287,27 @@ export class AsistenteBurbujaComponent {
     this.mandar(this.borrador());
   }
 
+  protected marcarAviso(valor: boolean): void {
+    if (!valor) return;
+    this.avisoVisto.set(true);
+    try {
+      sessionStorage.setItem(CLAVE_AVISO_IA, String(this.auth.sesion()?.id_usuario ?? ''));
+    } catch {
+      // Without storage the notice is asked again next time: harmless.
+    }
+  }
+
+  private leerAviso(): boolean {
+    try {
+      const id = this.auth.sesion()?.id_usuario;
+      return id !== undefined && sessionStorage.getItem(CLAVE_AVISO_IA) === String(id);
+    } catch {
+      return false;
+    }
+  }
+
   private mandar(texto: string): void {
+    if (!this.avisoVisto()) return;
     if (this.servicio.enviar(texto)) {
       this.borrador.set('');
       const caja = this.caja()?.nativeElement;

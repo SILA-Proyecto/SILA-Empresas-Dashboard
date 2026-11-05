@@ -1,8 +1,8 @@
 import { CUENTAS_EN_CERO } from '../periodos/testing/periodo.fixture';
-import type { Periodo } from '../periodos/models/periodos.models';
+import type { PeriodoConResultado } from '../periodos/con-resultado';
 
 /** A quincena of the year 2026 whose cascades add up (to be spread under what a test cares about). */
-export function periodoDe(id: number, extra: Partial<Periodo> = {}): Periodo {
+export function periodoDe(id: number, extra: Partial<PeriodoConResultado> = {}): PeriodoConResultado {
   const mes = Math.floor((id - 1) / 2) + 1;
   const quincena = ((id - 1) % 2) + 1;
   const inicio = `2026-${String(mes).padStart(2, '0')}-${quincena === 1 ? '01' : '16'}`;
@@ -15,7 +15,7 @@ export function periodoDe(id: number, extra: Partial<Periodo> = {}): Periodo {
  *   resultado = 900.000 − 300.000 − 50.000 − 20.000 = 530.000
  *   caja      = 700.000 (400.000 contado + 300.000 abonos) − 200.000 − 40.000 − 50.000 = 410.000
  */
-export const OCTUBRE_1: Periodo = periodoDe(19, {
+export const OCTUBRE_1: PeriodoConResultado = periodoDe(19, {
   estado: 'ABIERTA',
   ingresos_ventas: 900000,
   costo_produccion: 300000,

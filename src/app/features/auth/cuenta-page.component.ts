@@ -18,6 +18,7 @@ import { CampoCodigoMfaComponent } from './campo-codigo-mfa.component';
 import { ErrorAccionSensible, describirErrorSensible } from './errores-mfa';
 import { CambiarClaveFormComponent, CambioClave } from './cambiar-clave-form.component';
 import { CodigosRespaldoComponent } from './codigos-respaldo.component';
+import { FotoPerfilSeccionComponent } from './foto-perfil-seccion.component';
 import { MfaEnrolarComponent } from './mfa-enrolar.component';
 import { PasskeysSeccionComponent } from './passkeys-seccion.component';
 import { RegenerarCodigosDialogComponent } from './regenerar-codigos-dialog.component';
@@ -39,6 +40,7 @@ type AccionSesiones = 'otras' | 'todas';
     CodigosRespaldoComponent,
     ConfirmDialogComponent,
     DialogComponent,
+    FotoPerfilSeccionComponent,
     IconComponent,
     MfaEnrolarComponent,
     PageHeaderComponent,

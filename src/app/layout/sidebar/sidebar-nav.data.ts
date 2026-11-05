@@ -1,3 +1,4 @@
+import type { CodigoModulo } from '../../core/empresa/empresa.models';
 import type { Rol } from '../../core/services/auth.service';
 import type { IconName } from '../../shared/ui/icon/icon.component';
 
@@ -8,6 +9,8 @@ export interface SidebarNavItem {
   route?: string;
   /** Minimum role. Hiding the item is not security: the API rejects the calls anyway (20008). */
   rol?: Rol;
+  /** Optional module this screen belongs to: with the module off for the company the item is not listed. */
+  modulo?: CodigoModulo;
   badge?: string;
   /** The link is active only on this exact path (so `/ventas` does not light up on `/ventas/nueva`). */
   exacta?: boolean;
@@ -33,15 +36,15 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     items: [
       { label: 'Punto de venta', icon: 'lucideScanBarcode', route: '/ventas/nueva' },
       { label: 'Historial de ventas', icon: 'lucideReceipt', route: '/ventas', exacta: true },
-      { label: 'Precios por cliente', icon: 'lucideTags', route: '/precios-cliente', rol: 'ADMIN' },
+      { label: 'Precios por cliente', icon: 'lucideTags', route: '/precios-cliente', rol: 'ADMIN', modulo: 'PRECIOS_CLIENTE' },
       { label: 'Comprobantes', icon: 'lucideFileText', route: '/comprobantes' },
-      { label: 'Cartera', icon: 'lucideWallet', route: '/cartera' },
+      { label: 'Cartera', icon: 'lucideWallet', route: '/cartera', modulo: 'CREDITO' },
     ],
   },
   {
     label: 'Producción y acopio',
     items: [
-      { label: 'Calidad de la leche', icon: 'lucideMilk', route: '/acopio' },
+      { label: 'Calidad de la leche', icon: 'lucideMilk', route: '/acopio', modulo: 'CALIDAD_LECHE' },
       { label: 'Cuentas con proveedores', icon: 'lucideHandCoins', route: '/cuentas-proveedores' },
       { label: 'Producción', icon: 'lucideFactory', route: '/produccion' },
       { label: 'Inventario', icon: 'lucideWarehouse', route: '/inventario' },
@@ -52,9 +55,9 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     label: 'Finanzas',
     items: [
       { label: 'Gastos', icon: 'lucideBanknote', route: '/gastos' },
-      { label: 'Archivos', icon: 'lucideFolderOpen', route: '/archivos' },
-      { label: 'Resultado por quincena', icon: 'lucideChartColumn', route: '/resultado-quincena' },
-      { label: 'Margen de ganancia', icon: 'lucideTrendingUp', route: '/reportes/margen', rol: 'ADMIN' },
+      { label: 'Archivos', icon: 'lucideFolderOpen', route: '/archivos', modulo: 'ARCHIVOS' },
+      { label: 'Resultado por quincena', icon: 'lucideChartColumn', route: '/resultado-quincena', modulo: 'RESULTADO_QUINCENA' },
+      { label: 'Margen de ganancia', icon: 'lucideTrendingUp', route: '/reportes/margen', rol: 'ADMIN', modulo: 'MARGEN' },
       { label: 'Períodos', icon: 'lucideCalendarRange', route: '/periodos', rol: 'ADMIN' },
     ],
   },
@@ -66,8 +69,9 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     label: 'Administración',
     rol: 'ADMIN',
     items: [
+      { label: 'Datos de la empresa', icon: 'lucideBuilding2', route: '/empresa', rol: 'ADMIN' },
       { label: 'Parámetros', icon: 'lucideSlidersHorizontal', route: '/parametros', rol: 'ADMIN' },
-      { label: 'Auditoría y accesos', icon: 'lucideShieldCheck', route: '/auditoria' },
+      { label: 'Auditoría y accesos', icon: 'lucideShieldCheck', route: '/auditoria', modulo: 'AUDITORIA' },
       { label: 'Usuarios', icon: 'lucideUserCog', route: '/usuarios', rol: 'ADMIN' },
     ],
   },

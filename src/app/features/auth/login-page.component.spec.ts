@@ -7,6 +7,7 @@ import type { AuthResponse } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/services/auth.service';
 import { ThemeService } from '../../layout/services/theme.service';
 import { LoginPageComponent } from './login-page.component';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const SESION = { id_usuario: 1, usuario: 'ana.perez', nombre: 'Ana', email: 'a@example.com', rol: 'ADMIN' as const, mfa_activo: true };
 const OK: AuthResponse = { estado: 'OK', access_token: 'acceso', expires_in: 900, usuario: SESION };
@@ -32,10 +33,11 @@ describe('LoginPageComponent', () => {
   async function crear(consulta: Record<string, string> = {}): Promise<ComponentFixture<LoginPageComponent>> {
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideRouter([]),
         provideNgIconLoader(async () => ''),
         { provide: AuthService, useValue: auth },
-        { provide: ThemeService, useValue: {} },
+        { provide: ThemeService, useValue: { iconStyle: () => 'lucide' } },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(consulta) } } },
       ],
     });

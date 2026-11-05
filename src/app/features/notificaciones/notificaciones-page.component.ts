@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
 import type { Notificacion } from './models/notificaciones.models';
 import { NotificacionFilaComponent } from './notificacion-fila.component';
@@ -12,7 +13,7 @@ import { NotificacionesService } from './notificaciones.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NotificacionFilaComponent, PageHeaderComponent],
   template: `
-    <app-page-header title="Notificaciones" description="Lo que necesita atención hoy: stock bajo, lotes por vencer, cartera, quincenas sin cerrar, leche por pagar y documentos con error. Se calculan al momento y desaparecen solas cuando se resuelven.">
+    <app-page-header title="Notificaciones" [description]="descripcion()">
       <button type="button" class="sila-btn sila-btn-outline" [disabled]="servicio.noVistas().length === 0" (click)="servicio.marcarTodasLeidas()">Marcar todas como leídas</button>
     </app-page-header>
 
@@ -47,6 +48,12 @@ import { NotificacionesService } from './notificaciones.service';
 export class NotificacionesPageComponent {
   protected readonly servicio = inject(NotificacionesService);
   private readonly router = inject(Router);
+  private readonly empresa = inject(EmpresaService);
+
+  protected readonly descripcion = computed(
+    () =>
+      `Lo que necesita atención hoy: stock bajo, lotes por vencer, ${this.empresa.activo('CREDITO') ? 'cartera, ' : ''}quincenas sin cerrar, leche por pagar y documentos con error. Se calculan al momento y desaparecen solas cuando se resuelven.`,
+  );
 
   constructor() {
     this.servicio.refrescar();

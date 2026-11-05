@@ -1,0 +1,155 @@
+<div
+  class="fixed inset-0 z-50 bg-black/50 transition-opacity duration-200 print:hidden"
+  [class.opacity-0]="!estado.open()"
+  [class.pointer-events-none]="!estado.open()"
+  [class.invisible]="!estado.open()"
+  aria-hidden="true"
+  data-testid="apariencia-fondo"
+  (click)="estado.close()"
+></div>
+
+<aside
+  class="sila-apariencia fixed inset-y-0 end-0 z-50 flex w-[min(22rem,100vw)] flex-col border-s border-border bg-background text-foreground shadow-2xl transition-[translate,visibility] duration-200 print:hidden"
+  [class.translate-x-full]="!estado.open()"
+  [class.invisible]="!estado.open()"
+  [inert]="!estado.open()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="apariencia-titulo"
+  data-testid="apariencia-panel"
+>
+  <header class="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3">
+    <app-icon name="lucidePalette" class="size-5 text-primary" aria-hidden="true" />
+    <h2 id="apariencia-titulo" class="min-w-0 flex-1 text-base font-semibold">Apariencia</h2>
+    <button
+      #cerrar
+      type="button"
+      class="flex size-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring lg:size-9"
+      aria-label="Cerrar el panel de apariencia"
+      data-testid="apariencia-cerrar"
+      (click)="estado.close()"
+    >
+      <app-icon name="lucideX" class="size-4" aria-hidden="true" />
+    </button>
+  </header>
+
+  <div class="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4">
+    <section aria-labelledby="apariencia-modo">
+      <h3 id="apariencia-modo" class="mb-2 text-sm font-medium">Modo</h3>
+      <div class="grid grid-cols-3 gap-2" role="group" aria-labelledby="apariencia-modo">
+        @for (modo of modos; track modo.valor) {
+          <button
+            type="button"
+            class="flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border px-2 py-2 text-xs border-border text-muted-foreground hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground aria-pressed:hover:bg-primary/10 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            [attr.aria-pressed]="theme.mode() === modo.valor"
+            [attr.data-testid]="'apariencia-modo-' + modo.valor"
+            (click)="theme.setMode(modo.valor)"
+          >
+            <app-icon [name]="modo.icono" class="size-4" aria-hidden="true" />
+            {{ modo.etiqueta }}
+          </button>
+        }
+      </div>
+      @if (theme.mode() === 'auto') {
+        <p class="mt-2 text-xs text-muted-foreground">Sigue el modo claro u oscuro del teléfono o la computadora.</p>
+      }
+    </section>
+
+    <section aria-labelledby="apariencia-color">
+      <h3 id="apariencia-color" class="mb-2 text-sm font-medium">Color principal</h3>
+      <div class="flex flex-wrap gap-3" role="group" aria-labelledby="apariencia-color">
+        @for (color of colores; track color.valor) {
+          <!-- Fixed 44 px on both sides: the global 44 px minimum for phones would otherwise stretch it into a pill. -->
+          <button
+            type="button"
+            class="sila-muestra flex size-11 shrink-0 items-center justify-center rounded-full ring-offset-2 ring-offset-background aria-pressed:ring-2 aria-pressed:ring-foreground transition-shadow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+            [style.background-color]="color.muestra"
+            [attr.aria-label]="color.etiqueta"
+            [attr.title]="color.etiqueta"
+            [attr.aria-pressed]="theme.accent() === color.valor"
+            [attr.data-testid]="'apariencia-color-' + color.valor"
+            (click)="theme.setAccent(color.valor)"
+          >
+            @if (theme.accent() === color.valor) {
+              <app-icon name="lucideCheck" class="size-5 text-black/80" aria-hidden="true" />
+            }
+          </button>
+        }
+      </div>
+    </section>
+
+    <section aria-labelledby="apariencia-esquinas">
+      <h3 id="apariencia-esquinas" class="mb-2 text-sm font-medium">Esquinas</h3>
+      <div class="grid grid-cols-2 gap-2" role="group" aria-labelledby="apariencia-esquinas">
+        @for (opcion of esquinas; track opcion.valor) {
+          <button
+            type="button"
+            class="flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-start border-border text-muted-foreground hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground aria-pressed:hover:bg-primary/10 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            [attr.aria-pressed]="theme.radius() === opcion.valor"
+            [attr.data-testid]="'apariencia-esquinas-' + opcion.valor"
+            (click)="theme.setRadius(opcion.valor)"
+          >
+            <span class="size-5 shrink-0 border-2 border-current border-b-0 border-s-0" [style.border-start-end-radius]="opcion.radio" aria-hidden="true"></span>
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <section aria-labelledby="apariencia-iconos">
+      <h3 id="apariencia-iconos" class="mb-2 text-sm font-medium">Estilo de íconos</h3>
+      <div class="space-y-2" role="group" aria-labelledby="apariencia-iconos">
+        @for (opcion of estilosIconos; track opcion.valor) {
+          <button
+            type="button"
+            class="flex min-h-11 w-full flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-start text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring border-border text-muted-foreground hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground aria-pressed:hover:bg-primary/10"
+            [attr.aria-pressed]="theme.iconStyle() === opcion.valor"
+            [attr.data-testid]="'apariencia-iconos-' + opcion.valor"
+            (click)="theme.setIconStyle(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+            <!-- Only while the panel is open: the other styles' chunks are not downloaded on every page. -->
+            @if (estado.open()) {
+              <span class="flex gap-2" aria-hidden="true">
+                @for (icono of muestraIconos; track icono) {
+                  <app-icon [name]="icono" [estilo]="opcion.valor" class="size-4" />
+                }
+              </span>
+            }
+          </button>
+        }
+      </div>
+    </section>
+
+    <section aria-labelledby="apariencia-letra">
+      <h3 id="apariencia-letra" class="mb-2 text-sm font-medium">Tamaño de letra</h3>
+      <div class="grid grid-cols-2 gap-2" role="group" aria-labelledby="apariencia-letra">
+        @for (opcion of letras; track opcion.valor) {
+          <button
+            type="button"
+            class="flex min-h-11 items-center justify-center gap-2 rounded-lg border px-3 py-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring border-border text-muted-foreground hover:bg-accent aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground aria-pressed:hover:bg-primary/10"
+            [class.text-xs]="opcion.valor === 'normal'"
+            [class.text-sm]="opcion.valor === 'large'"
+            [attr.aria-pressed]="theme.fontSize() === opcion.valor"
+            [attr.data-testid]="'apariencia-letra-' + opcion.valor"
+            (click)="theme.setFontSize(opcion.valor)"
+          >
+            {{ opcion.etiqueta }}
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+
+  <footer class="shrink-0 border-t border-border p-4">
+    <button
+      type="button"
+      class="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      data-testid="apariencia-original"
+      (click)="theme.reset()"
+    >
+      <app-icon name="lucideRotateCcw" class="size-4" aria-hidden="true" />
+      Volver a lo original
+    </button>
+  </footer>
+</aside>

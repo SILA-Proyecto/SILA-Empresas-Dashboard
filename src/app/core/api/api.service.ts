@@ -52,8 +52,9 @@ export class ApiService {
     return this.http.patch<T>(this.buildUrl(path), body, this.buildOptions(this.conClave(path, opciones)));
   }
 
-  delete<T>(path: string, opciones?: ApiOpciones): Observable<T> {
-    return this.http.delete<T>(this.buildUrl(path), this.buildOptions(this.conClave(path, opciones)));
+  /** `cuerpo`: for the few deletes that carry JSON (e.g. the second-factor code of `DELETE /empresa/logo`). */
+  delete<T>(path: string, opciones?: ApiOpciones, cuerpo?: unknown): Observable<T> {
+    return this.http.delete<T>(this.buildUrl(path), { ...this.buildOptions(this.conClave(path, opciones)), ...(cuerpo !== undefined ? { body: cuerpo } : {}) });
   }
 
   // ---------- Binary and multipart (`/archivos/**`: no Idempotency-Key there) ----------
@@ -76,6 +77,16 @@ export class ApiService {
   /** `multipart/form-data` answering JSON. `Content-Type` is NOT set: the browser adds it with its `boundary`. */
   postFormData<T>(path: string, formData: FormData): Observable<T> {
     return this.http.post<T>(this.buildUrl(path), formData);
+  }
+
+  /** PUT of `multipart/form-data` answering JSON (logo, profile photo). */
+  putFormData<T>(path: string, formData: FormData): Observable<T> {
+    return this.http.put<T>(this.buildUrl(path), formData);
+  }
+
+  /** GET of an image that needs the token (profile photos): just the bytes. */
+  getImagen(path: string): Observable<Blob> {
+    return this.http.get(this.buildUrl(path), { responseType: 'blob' });
   }
 
   /** `multipart/form-data` answering a file (`/archivos/descifrar`). */

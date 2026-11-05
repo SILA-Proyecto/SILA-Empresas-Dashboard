@@ -11,6 +11,7 @@ import { ComprobanteDetalleDialogComponent } from './comprobante-detalle-dialog.
 import { ComprobantesPageComponent } from './comprobantes-page.component';
 import { COMPROBANTES_REPOSITORY } from './data/comprobantes.provider';
 import type { Comprobante, ComprobanteDetalle } from './models/comprobantes.models';
+import { provideEmpresaFalsa } from '../../core/empresa/testing/empresa-falsa';
 
 const VENTA: Comprobante = { tipo: 'VENTA', id_documento: 123, numero: 'VENTA #123', sentido: 'INGRESO', afecta_caja: true, fecha: '2026-10-13', monto: 119000, id_tercero: 5, tercero_tipo: 'CLIENTE', tercero: 'Tienda La Esquina', descripcion: 'Venta de contado', metodo_pago: 'VARIOS', referencia: null, estado: 'VIGENTE', motivo_anulacion: null, id_periodo: 19, usuario_registro: 'ana' };
 const GASTO_ANULADO: Comprobante = { ...VENTA, tipo: 'GASTO', id_documento: 8, numero: 'GASTO #8', sentido: 'EGRESO', monto: 85000, tercero_tipo: null, tercero: null, descripcion: 'Diésel', metodo_pago: null, estado: 'ANULADO', motivo_anulacion: 'Monto equivocado' };
@@ -61,6 +62,7 @@ describe('Comprobantes', () => {
     visor = { ver: vi.fn(() => Promise.resolve()) };
     TestBed.configureTestingModule({
       providers: [
+        provideEmpresaFalsa(),
         provideNgIconLoader(async () => ''),
         { provide: ARCHIVOS_REPOSITORY, useValue: archivos },
         { provide: VisorArchivosService, useValue: visor },
@@ -228,7 +230,7 @@ describe('Comprobantes', () => {
       const f = await dialogo({ tipo: 'VENTA', id: 123 });
 
       expect(t(f, '[data-testid=aviso-interno]')).toBe('Comprobante interno — no es factura electrónica.');
-      expect(f.nativeElement.querySelector('.zona-impresion-ticket .print\\:block')?.textContent).toContain('Llanolat');
+      expect(f.nativeElement.querySelector('.zona-impresion-ticket .print\\:block')?.textContent).toContain('Lácteos de Prueba SAS');
       expect(limpio((f.nativeElement as HTMLElement).textContent)).not.toMatch(/factura (?!electrónica)/i);
     });
 

@@ -26,6 +26,7 @@ import { INSUMOS_REPOSITORY } from './data/insumos.provider';
 import { cargarInsumosActivos } from './insumos-activos';
 import type { Compra, EstadoCalidadCompra, EstadoCompra } from './models/insumos.models';
 import { todasLasPaginas } from '../../core/api/todas-las-paginas';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 
 @Component({
   selector: 'app-compras-tab',
@@ -46,7 +47,7 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
   ],
   template: `
     <div class="mb-4 flex justify-end">
-      <app-boton-csv nombre="compras_materias_primas" [columnas]="columnasCsv" [cargar]="todas" />
+      <app-boton-csv nombre="compras_materias_primas" [columnas]="columnasCsv()" [cargar]="todas" />
     </div>
 
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
@@ -66,14 +67,16 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
           <option value="ANULADA" [selected]="estado() === 'ANULADA'">Anuladas</option>
         </select>
       </div>
-      <div>
-        <label for="compras-calidad" class="mb-1 block text-xs font-medium text-muted-foreground">Control calidad</label>
-        <select id="compras-calidad" class="sila-select w-36" (change)="estadoCalidad.set($any($event.target).value)">
-          <option value="" [selected]="estadoCalidad() === ''">Todos</option>
-          <option value="APROBADO" [selected]="estadoCalidad() === 'APROBADO'">Aprobadas</option>
-          <option value="RECHAZADO" [selected]="estadoCalidad() === 'RECHAZADO'">Rechazadas</option>
-        </select>
-      </div>
+      @if (calidadActiva()) {
+        <div>
+          <label for="compras-calidad" class="mb-1 block text-xs font-medium text-muted-foreground">Control calidad</label>
+          <select id="compras-calidad" class="sila-select w-36" (change)="estadoCalidad.set($any($event.target).value)">
+            <option value="" [selected]="estadoCalidad() === ''">Todos</option>
+            <option value="APROBADO" [selected]="estadoCalidad() === 'APROBADO'">Aprobadas</option>
+            <option value="RECHAZADO" [selected]="estadoCalidad() === 'RECHAZADO'">Rechazadas</option>
+          </select>
+        </div>
+      }
       <div>
         <label for="compras-contado" class="mb-1 block text-xs font-medium text-muted-foreground">Modalidad</label>
         <select id="compras-contado" class="sila-select w-36" (change)="contado.set($any($event.target).value)">
@@ -111,7 +114,7 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
       <ng-template appDataTableCell="insumo" [cellRows]="listado.datos()?.items" let-c>
         <div class="flex flex-col">
           <span [class.line-through]="c.estado === 'ANULADA'">{{ c.insumo }}</span>
-          @if (c.temperatura != null || c.acidez != null) {
+          @if (calidadActiva() && (c.temperatura != null || c.acidez != null)) {
             <span class="text-xs text-muted-foreground">Temp: {{ c.temperatura }} °C · Acidez: {{ c.acidez }} °D</span>
           }
         </div>
@@ -198,6 +201,9 @@ import { todasLasPaginas } from '../../core/api/todas-las-paginas';
 })
 export class ComprasTabComponent {
   private readonly repo = inject(INSUMOS_REPOSITORY);
+  private readonly empresa = inject(EmpresaService);
+  /** Temperature, acidity and the quality filter only exist with the milk-quality module. */
+  protected readonly calidadActiva = computed(() => this.empresa.activo('CALIDAD_LECHE'));
   private readonly catalogos = inject(CATALOGOS_REPOSITORY);
   private readonly toast = inject(ToastService);
   private readonly errores = inject(ApiErrorService);
@@ -257,7 +263,7 @@ export class ComprasTabComponent {
   ];
   protected readonly compraId = (c: Compra) => c.id_compra;
 
-  protected readonly columnasCsv: ColumnaCsv<Compra>[] = [
+  private readonly columnasCsvTodas: ColumnaCsv<Compra>[] = [
     { titulo: 'Fecha', valor: (c) => c.fecha },
     { titulo: 'Materia prima', valor: (c) => c.insumo },
     { titulo: 'Unidad', valor: (c) => c.unidad_medida },
@@ -272,6 +278,7 @@ export class ComprasTabComponent {
     { titulo: 'Registró', valor: (c) => c.usuario_registro },
     { titulo: 'Fecha de registro', valor: (c) => fechaCsv(c.fecha_registro) },
   ];
+  protected readonly columnasCsv = computed(() => (this.calidadActiva() ? this.columnasCsvTodas : this.columnasCsvTodas.filter((c) => c.titulo !== 'Calidad')));
   /** Every purchase that matches the filters on screen, in the order on screen. */
   protected readonly todas = () => todasParaExportar((q) => this.repo.listarCompras({ ...this.listado.consulta(), ...q }));
 

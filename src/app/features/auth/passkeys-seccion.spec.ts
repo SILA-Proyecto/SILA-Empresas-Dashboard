@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { of, throwError } from 'rxjs';
 import type { Passkey } from '../../core/auth/auth.models';
@@ -73,7 +74,7 @@ describe('Mi cuenta · Face ID / huella', () => {
     };
     passkey = { soportado: vi.fn(() => Promise.resolve(true)), crear: vi.fn(() => Promise.resolve(CREDENCIAL)) };
     TestBed.configureTestingModule({
-      providers: [provideNgIconLoader(async () => ''), { provide: AuthService, useValue: auth }, { provide: PasskeyService, useValue: passkey }],
+      providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: AuthService, useValue: auth }, { provide: PasskeyService, useValue: passkey }],
     });
   });
 
@@ -88,6 +89,16 @@ describe('Mi cuenta · Face ID / huella', () => {
       expect(filas[0].textContent).toContain('13/10/2026 21:40');
       expect(filas[0].textContent).toContain('14/10/2026 10:05');
       expect(filas[1].textContent).toContain('Último uso: nunca');
+    });
+
+    it('avisa qué se guarda de cada dispositivo y que la biometría no sale de él, con enlace a la política (informativo)', async () => {
+      const f = await crear();
+      const aviso = q(f, '[data-testid=aviso-passkeys]')!;
+
+      expect(aviso.textContent).toContain('llave pública');
+      expect(aviso.textContent).toContain('La biometría no sale de tu dispositivo');
+      expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/legal/politica-privacidad');
+      expect(aviso.querySelector('input')).toBeNull();
     });
 
     it('con el texto de ayuda y sin dispositivos dice que no hay ninguno', async () => {

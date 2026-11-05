@@ -1,5 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 
 /** Anything that is not `[a-z0-9_.@-]` is dropped, so a file name can never be tricked by the user name. */
@@ -33,7 +34,7 @@ function fechaBogota(fecha: Date): string {
     <div class="zona-impresion-codigos space-y-4">
       <div>
         <h2 class="text-lg font-semibold tracking-tight">Guarda tus códigos de respaldo</h2>
-        <p class="hidden text-sm print:block">SILA · Llanolat — códigos de respaldo · {{ usuario() }} · {{ fecha() }}</p>
+        <p class="hidden text-sm print:block">{{ marca() }} — códigos de respaldo · {{ usuario() }} · {{ fecha() }}</p>
       </div>
 
       <p class="rounded-md bg-warning/20 px-3 py-2 text-sm" role="alert">
@@ -75,6 +76,12 @@ function fechaBogota(fecha: Date): string {
 })
 export class CodigosRespaldoComponent {
   private readonly clipboard = inject(Clipboard);
+  private readonly empresa = inject(EmpresaService);
+  /** «SILA · <short name>» in the printout and in the downloaded file. */
+  protected readonly marca = computed(() => {
+    const corto = this.empresa.nombreCorto();
+    return corto ? `SILA · ${corto}` : 'SILA';
+  });
 
   readonly codigos = input.required<readonly string[]>();
   /** Only for the file name and the heading: no password, nothing else. */
@@ -105,7 +112,7 @@ export class CodigosRespaldoComponent {
 
   protected descargar(): void {
     const contenido = [
-      'SILA · Llanolat — códigos de respaldo',
+      `${this.marca()} — códigos de respaldo`,
       `Usuario: ${this.usuario()}`,
       `Fecha: ${this.fecha()}`,
       '',

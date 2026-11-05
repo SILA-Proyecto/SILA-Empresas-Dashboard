@@ -6,16 +6,14 @@
     <div class="pointer-events-none absolute inset-0 opacity-25 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:22px_22px]"></div>
 
     <div class="relative flex items-center gap-3">
-      <div class="grid size-11 place-items-center rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur">
-        <app-icon name="lucideMilk" class="size-6" />
-      </div>
-      <span class="text-lg font-bold tracking-tight">SILA · Llanolat</span>
+      <app-logo-empresa tamano="lg" anchoMaximo="14rem" />
+      <span class="text-lg font-bold tracking-tight">{{ marca() }}</span>
     </div>
 
     <div class="relative max-w-md space-y-8">
       <div class="space-y-3">
         <h2 class="text-4xl font-bold leading-tight tracking-tight">Del ordeño a la caja, todo en un solo lugar.</h2>
-        <p class="text-base text-primary-foreground/80">Compra de leche, producción, inventario, ventas y cartera de tu empresa de lácteos.</p>
+        <p class="text-base text-primary-foreground/80">Compra de leche, producción, inventario, y ventas de tu empresa de lácteos.</p>
       </div>
       <ul class="space-y-3 text-sm">
         <li class="flex items-center gap-3"><span class="grid size-8 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25"><app-icon name="lucideScanBarcode" class="size-4" /></span>Punto de venta rápido, con pago mixto</li>
@@ -24,24 +22,35 @@
       </ul>
     </div>
 
-    <p class="relative text-xs text-primary-foreground/70">© Llanolat · Colombia</p>
+    <p class="relative text-xs text-primary-foreground/70">{{ pie() }}</p>
   </aside>
 
   <!-- Form side. On small screens the same gradient shows softly behind the card. -->
   <section class="relative grid place-items-center p-4 sm:p-8">
     <div class="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/15 via-transparent to-chart-2/10 lg:hidden" aria-hidden="true"></div>
     <div class="pointer-events-none absolute -end-20 -top-20 size-72 rounded-full bg-primary/20 blur-3xl lg:hidden" aria-hidden="true"></div>
+  <div class="relative flex w-full max-w-md flex-col gap-3">
   <div class="sila-card relative w-full max-w-md p-6 shadow-xl sm:p-8">
     <div class="mb-6 flex items-center gap-3">
-      <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-        <app-icon name="lucideMilk" class="size-5" aria-hidden="true" />
-      </div>
-      <div>
-        <p class="text-sm font-bold tracking-tight">SILA · Llanolat</p>
+      <app-logo-empresa tamano="md" />
+      <div class="min-w-0">
+        <p class="text-sm font-bold tracking-tight">{{ marca() }}</p>
         <p class="text-xs text-muted-foreground">Sistema de gestión de lácteos</p>
       </div>
     </div>
 
+    @if (suspension(); as mensaje) {
+      <h1 class="mb-3 text-xl font-semibold tracking-tight">Servicio suspendido</h1>
+      <p class="flex gap-3 rounded-md bg-warning/15 px-3 py-3 text-sm" role="alert" data-testid="aviso-suspension">
+        <app-icon name="lucideCircleAlert" class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+        <span>{{ mensaje }}</span>
+      </p>
+      <p class="mt-3 text-xs text-muted-foreground" data-testid="suspension-terminos">Qué significa y qué pasa con tus datos: <a routerLink="/legal/terminos" class="underline underline-offset-2">Términos y condiciones</a>.</p>
+      <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-4 w-full" data-testid="comprobar-suspension" [disabled]="comprobando()" [attr.aria-busy]="comprobando()" (click)="comprobarDeNuevo()">
+        <app-icon name="lucideRefreshCw" class="size-4" aria-hidden="true" />
+        {{ comprobando() ? 'Comprobando…' : 'Volver a comprobar' }}
+      </button>
+    } @else {
     <h1 class="mb-1 text-xl font-semibold tracking-tight" [class.sr-only]="paso() === 'codigos-respaldo'">{{ titulo() }}</h1>
 
     @if (aviso(); as mensaje) {
@@ -78,6 +87,13 @@
           <button type="submit" class="sila-btn sila-btn-primary w-full" [disabled]="ocupado()" [attr.aria-busy]="ocupado()">
             {{ ocupado() ? 'Procesando…' : 'Ingresar' }}
           </button>
+          <!-- Informative only: the acceptance that counts (and is recorded) is the «Aceptar términos» screen after signing in. -->
+          <p class="text-center text-xs text-muted-foreground" data-testid="login-legal">
+            Al ingresar, aceptas los
+            <a routerLink="/legal/terminos" target="_blank" rel="noopener" class="underline underline-offset-2">Términos y condiciones<span class="sr-only"> (se abre en una pestaña nueva)</span></a>
+            y la
+            <a routerLink="/legal/politica-privacidad" target="_blank" rel="noopener" class="underline underline-offset-2">Política de privacidad<span class="sr-only"> (se abre en una pestaña nueva)</span></a>.
+          </p>
         </form>
       }
 
@@ -147,6 +163,9 @@
         Volver
       </button>
     }
+    }
+  </div>
+  <app-pie-legal />
   </div>
   </section>
 </main>

@@ -24,7 +24,7 @@ export function quincenaAnterior(actual: Pick<Periodo, 'id_periodo' | 'fecha_ini
   return anterior;
 }
 
-const LINEAS: readonly { clave: CambioQuincena['clave']; etiqueta: string; valor: (p: Periodo) => number; masEsMejor: boolean }[] = [
+const LINEAS: readonly { clave: CambioQuincena['clave']; etiqueta: string; valor: (p: Periodo) => number | null; masEsMejor: boolean }[] = [
   { clave: 'ventas', etiqueta: 'Ventas (sin IVA)', valor: (p) => p.ingresos_ventas, masEsMejor: true },
   { clave: 'cobrado', etiqueta: 'Cobrado', valor: (p) => p.total_cobrado, masEsMejor: true },
   { clave: 'gastos', etiqueta: 'Gastos', valor: (p) => p.gastos_operativos, masEsMejor: false },
@@ -32,13 +32,17 @@ const LINEAS: readonly { clave: CambioQuincena['clave']; etiqueta: string; valor
   { clave: 'caja', etiqueta: 'Caja', valor: (p) => p.caja_neta, masEsMejor: true },
 ];
 
-/** How each key figure moved from the previous quincena to this one. */
+/**
+ * How each key figure moved from the previous quincena to this one. A figure that did not come (`null`: the RESULTADO_QUINCENA
+ * module is off) is left out instead of being compared as zero.
+ */
 export function compararQuincenas(actual: Periodo, anterior: Periodo): CambioQuincena[] {
-  return LINEAS.map((l) => {
+  return LINEAS.flatMap((l): CambioQuincena[] => {
     const ahora = l.valor(actual);
     const antes = l.valor(anterior);
+    if (ahora === null || antes === null) return [];
     const diferencia = redondear2(ahora - antes);
-    return {
+    return [{
       clave: l.clave,
       etiqueta: l.etiqueta,
       actual: ahora,
@@ -46,6 +50,6 @@ export function compararQuincenas(actual: Periodo, anterior: Periodo): CambioQui
       diferencia,
       porcentaje: antes === 0 ? null : Math.round((diferencia / Math.abs(antes)) * 1000) / 10,
       efecto: diferencia === 0 ? 'igual' : diferencia > 0 === l.masEsMejor ? 'mejor' : 'peor',
-    };
+    }];
   });
 }

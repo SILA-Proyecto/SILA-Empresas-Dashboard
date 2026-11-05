@@ -143,6 +143,11 @@ export class AuthService {
     return this.api.put<Sesion>('auth/yo', datos).pipe(tap((usuario) => this.sesion.set(usuario)));
   }
 
+  /** My profile photo changed (uploaded or removed): only its version travels, the image is fetched by whoever shows it. */
+  actualizarFotoVersion(version: string | null): void {
+    this.sesion.update((s) => (s ? { ...s, foto_version: version } : s));
+  }
+
   // ---------- My sessions (signed in) ----------
 
   misSesiones(): Observable<SesionAbierta[]> {

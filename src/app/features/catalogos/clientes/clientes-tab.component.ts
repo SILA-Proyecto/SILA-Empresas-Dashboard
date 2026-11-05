@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { ApiErrorService } from '../../../core/api/api-error';
 import { HasRoleDirective } from '../../../core/auth/has-role.directive';
+import { EmpresaService } from '../../../core/empresa/empresa.service';
 import { ConfirmDialogComponent } from '../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from '../../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../../shared/ui/data-table/data-table.models';
@@ -35,6 +36,7 @@ export class ClientesTabComponent {
   private readonly toast = inject(ToastService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly empresa = inject(EmpresaService);
 
   protected readonly texto = signal('');
   protected readonly filtroActivo = signal<FiltroActivo>('TODOS');
@@ -53,7 +55,7 @@ export class ClientesTabComponent {
     sort: 'nombre,asc',
   });
 
-  protected readonly columnas: DataTableColumn<Cliente>[] = [
+  private readonly columnasTodas: DataTableColumn<Cliente>[] = [
     { key: 'numero_documento', label: 'Documento', value: (c) => c.numero_documento },
     { key: 'nombre', label: 'Nombre', rol: 'titulo', value: (c) => c.nombre },
     { key: 'email', label: 'Correo', value: (c) => c.email },
@@ -64,6 +66,9 @@ export class ClientesTabComponent {
     { key: 'activo', label: 'Estado', value: (c) => (c.activo ? 1 : 0) },
     { key: 'acciones', label: 'Acciones', sortable: false, align: 'end', value: () => '' },
   ];
+
+  /** Credit limit and balance owed are stored data that stay hidden while the company has no credit module. */
+  protected readonly columnas = computed(() => (this.empresa.activo('CREDITO') ? this.columnasTodas : this.columnasTodas.filter((c) => c.key !== 'limite_credito' && c.key !== 'saldo_deudor')));
 
   protected readonly clienteId = (c: Cliente) => c.id_cliente;
   protected readonly cop = formatoCop;

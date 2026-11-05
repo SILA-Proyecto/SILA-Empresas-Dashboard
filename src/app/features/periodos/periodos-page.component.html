@@ -34,7 +34,7 @@
     }
     <label class="flex items-center gap-2 pb-2 text-sm">
       <input type="checkbox" class="size-4" [checked]="masColumnas()" (change)="masColumnas.set($any($event.target).checked)" />
-      Mostrar leche por pagar y caja
+      {{ resultadoActivo() ? 'Mostrar leche por pagar y caja' : 'Mostrar leche por pagar' }}
     </label>
     <div>
       <label for="periodos-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
@@ -75,18 +75,18 @@
     <ng-template appDataTableCell="estado" [cellRows]="listado.datos()?.items" let-periodo>
       <app-status-chip [texto]="periodo.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada'" [tono]="periodo.estado === 'ABIERTA' ? 'exito' : 'neutro'" />
     </ng-template>
-    <ng-template appDataTableCell="ingresos_ventas" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.ingresos_ventas) }}</ng-template>
-    <ng-template appDataTableCell="costo_produccion" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.costo_produccion) }}</ng-template>
-    <ng-template appDataTableCell="gastos_operativos" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.gastos_operativos) }}</ng-template>
-    <ng-template appDataTableCell="cartera_castigada" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.cartera_castigada) }}</ng-template>
+    <ng-template appDataTableCell="ingresos_ventas" [cellRows]="listado.datos()?.items" let-periodo>{{ copONada(periodo.ingresos_ventas) }}</ng-template>
+    <ng-template appDataTableCell="costo_produccion" [cellRows]="listado.datos()?.items" let-periodo>{{ copONada(periodo.costo_produccion) }}</ng-template>
+    <ng-template appDataTableCell="gastos_operativos" [cellRows]="listado.datos()?.items" let-periodo>{{ copONada(periodo.gastos_operativos) }}</ng-template>
+    <ng-template appDataTableCell="cartera_castigada" [cellRows]="listado.datos()?.items" let-periodo>{{ copONada(periodo.cartera_castigada) }}</ng-template>
     <ng-template appDataTableCell="resultado_estimado" [cellRows]="listado.datos()?.items" let-periodo>
       <!-- A negative result is shown with its minus sign and bold text, besides the color. -->
-      <span [class.text-destructive]="periodo.resultado_estimado < 0" [class.font-semibold]="periodo.resultado_estimado < 0">
-        {{ cop(periodo.resultado_estimado) }}
+      <span [class.text-destructive]="(periodo.resultado_estimado ?? 0) < 0" [class.font-semibold]="(periodo.resultado_estimado ?? 0) < 0">
+        {{ copONada(periodo.resultado_estimado) }}
       </span>
     </ng-template>
     <ng-template appDataTableCell="por_pagar_proveedores" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.por_pagar_proveedores" /></ng-template>
-    <ng-template appDataTableCell="caja_neta" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.caja_neta" /></ng-template>
+    <ng-template appDataTableCell="caja_neta" [cellRows]="listado.datos()?.items" let-periodo>@if (periodo.caja_neta === null) { — } @else { <app-monto [valor]="periodo.caja_neta" /> }</ng-template>
     <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-periodo>
       <!-- Hiding is not security: the API answers 403 / 20008 to an OPERATIVO anyway. -->
       <div *hasRole="'ADMIN'" class="flex justify-end gap-1">

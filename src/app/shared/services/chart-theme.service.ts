@@ -46,7 +46,7 @@ export class ChartThemeService {
   constructor() {
     effect(() => {
       // Track the signals that change the underlying CSS custom properties.
-      this.theme.mode();
+      this.theme.isDark();
       this.theme.accent();
       // The DOM attribute/class updates happen in this same ThemeService effect;
       // defer one microtask so getComputedStyle reads the post-update values.

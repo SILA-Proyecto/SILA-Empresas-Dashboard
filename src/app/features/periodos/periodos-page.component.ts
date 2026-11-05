@@ -1,9 +1,10 @@
 import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
 import { RouterLink } from '@angular/router';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -24,6 +25,12 @@ type FiltroEstado = 'TODOS' | EstadoPeriodo;
 
 /** Reopening needs a reason of 10 to 200 characters (it goes to the audit log). */
 const MOTIVO_REABRIR = { min: 10, max: 200 };
+
+/** Columns that only exist with the RESULTADO_QUINCENA module (without it the API sends them as `null`). */
+const COLUMNAS_RESULTADO = new Set(['ingresos_ventas', 'costo_produccion', 'gastos_operativos', 'cartera_castigada', 'resultado_estimado', 'caja_neta']);
+
+/** Default order of the list; also what replaces an order by result once the module is off. */
+const ORDEN_INICIAL = 'fecha_inicio,asc';
 
 /** A resource that has not answered yet. After the first answer it is never "loading" again (it "reloads"). */
 function pendiente(estado: string): boolean {
@@ -52,6 +59,20 @@ export class PeriodosPageComponent {
   private readonly toast = inject(ToastService);
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly empresa = inject(EmpresaService);
+
+  /** Without the module the quincenas, their accounts, closing and reopening stay; the result figures go. */
+  protected readonly resultadoActivo = computed(() => this.empresa.activo('RESULTADO_QUINCENA'));
+
+  constructor() {
+    // Sorting by result with the module off is a `20020`: back to the default order (the column is gone too).
+    effect(() => {
+      if (this.resultadoActivo()) return;
+      untracked(() => {
+        if (this.listado.sort().startsWith('resultado_estimado')) this.listado.sort.set(ORDEN_INICIAL);
+      });
+    });
+  }
 
   // ---------- Years and the current quincena ----------
 
@@ -94,7 +115,7 @@ export class PeriodosPageComponent {
       estado: this.filtroEstado() === 'TODOS' ? undefined : (this.filtroEstado() as EstadoPeriodo),
     }),
     cargar: (query) => this.repo.listar(query),
-    sort: 'fecha_inicio,asc',
+    sort: ORDEN_INICIAL,
     // A year has 24 rows: one page is enough.
     tamanoInicial: 50,
     habilitado: () => this.iniciado() && this.anio() !== null,
@@ -114,21 +135,26 @@ export class PeriodosPageComponent {
     { key: 'fecha_inicio', label: 'Quincena', value: (p) => etiquetaQuincena(p.mes, p.quincena) },
     { key: 'fechas', label: 'Fechas', sortable: false, value: (p) => `${formatoFecha(p.fecha_inicio)} – ${formatoFecha(p.fecha_fin)}` },
     { key: 'estado', label: 'Estado', value: (p) => p.estado },
-    { key: 'ingresos_ventas', label: 'Ingresos', sortable: false, align: 'end', value: (p) => p.ingresos_ventas },
-    { key: 'costo_produccion', label: 'Costo de producción', sortable: false, align: 'end', value: (p) => p.costo_produccion },
-    { key: 'gastos_operativos', label: 'Gastos', sortable: false, align: 'end', value: (p) => p.gastos_operativos },
-    { key: 'cartera_castigada', label: 'Cartera castigada', sortable: false, align: 'end', value: (p) => p.cartera_castigada },
-    { key: 'resultado_estimado', label: 'Resultado estimado', align: 'end', value: (p) => p.resultado_estimado },
+    { key: 'ingresos_ventas', label: 'Ingresos', sortable: false, align: 'end', value: (p) => p.ingresos_ventas ?? '' },
+    { key: 'costo_produccion', label: 'Costo de producción', sortable: false, align: 'end', value: (p) => p.costo_produccion ?? '' },
+    { key: 'gastos_operativos', label: 'Gastos', sortable: false, align: 'end', value: (p) => p.gastos_operativos ?? '' },
+    { key: 'cartera_castigada', label: 'Cartera castigada', sortable: false, align: 'end', value: (p) => p.cartera_castigada ?? '' },
+    { key: 'resultado_estimado', label: 'Resultado estimado', align: 'end', value: (p) => p.resultado_estimado ?? '' },
   ];
   private readonly columnasCuentas: DataTableColumn<Periodo>[] = [
     { key: 'por_pagar_proveedores', label: 'Por pagar a proveedores', sortable: false, align: 'end', value: (p) => p.por_pagar_proveedores },
-    { key: 'caja_neta', label: 'Caja neta', sortable: false, align: 'end', value: (p) => p.caja_neta },
+    { key: 'caja_neta', label: 'Caja neta', sortable: false, align: 'end', value: (p) => p.caja_neta ?? '' },
   ];
   private readonly columnaAcciones: DataTableColumn<Periodo> = { key: 'acciones', label: 'Acciones', sortable: false, align: 'end', value: () => '' };
-  protected readonly columnas = computed(() => [...this.columnasBase, ...(this.masColumnas() ? this.columnasCuentas : []), this.columnaAcciones]);
+  protected readonly columnas = computed(() => {
+    const todas = [...this.columnasBase, ...(this.masColumnas() ? this.columnasCuentas : []), this.columnaAcciones];
+    return this.resultadoActivo() ? todas : todas.filter((c) => !COLUMNAS_RESULTADO.has(c.key));
+  });
 
   protected readonly periodoId = (p: Periodo) => p.id_periodo;
   protected readonly cop = formatoCop;
+  /** A result figure that did not come (module off) is a dash, never $0. The columns go too; this covers the moment in between. */
+  protected readonly copONada = (valor: number | null) => (valor === null ? '—' : formatoCop(valor));
   protected readonly fecha = formatoFecha;
   protected readonly quincena = (p: Periodo) => etiquetaQuincena(p.mes, p.quincena);
   protected readonly esActual = (p: Periodo) => p.id_periodo === this.actualId();

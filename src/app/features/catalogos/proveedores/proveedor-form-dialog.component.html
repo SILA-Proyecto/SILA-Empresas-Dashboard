@@ -1,4 +1,7 @@
 <app-dialog [open]="abierto()" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
+  <app-aviso-legal class="mb-4" ruta="/legal/politica-privacidad" enlace="Política de privacidad" data-testid="aviso-datos-terceros">
+    Quien registra datos de otra persona debe contar con su autorización previa e informada y poder demostrarla.
+  </app-aviso-legal>
   <form id="proveedor-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
     <app-form-field etiqueta="Tipo de documento" [obligatorio]="true">
       <select class="sila-select" formControlName="tipo_documento">

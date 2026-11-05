@@ -23,6 +23,8 @@ export interface Usuario {
   ultimo_login: string | null;
   fecha_cambio_clave: string | null;
   fecha_creacion: string;
+  /** `null` = no profile photo. */
+  foto_version?: string | null;
 }
 
 /**

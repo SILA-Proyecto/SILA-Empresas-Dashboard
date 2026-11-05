@@ -7,7 +7,8 @@ export interface TableroHoy {
   ventas_total: number;
   ventas_cantidad: number;
   ventas_contado: number;
-  ventas_credito: number;
+  /** `null` when the company has the credit module off. */
+  ventas_credito: number | null;
   /** What came in and went out of the cash box today (a credit sale does not come in; the abonos do). */
   caja_ingresos: number;
   caja_egresos: number;
@@ -29,14 +30,16 @@ export interface TableroQuincena {
   fecha_inicio: string;
   fecha_fin: string;
   estado: EstadoPeriodo;
-  ingresos_ventas: number;
+  /** The six result figures (`ingresos_ventas`, `costo_produccion`, `gastos_operativos`, `cartera_castigada`,
+   * `resultado_estimado`, `caja_neta`) are `null` when the company has the RESULTADO_QUINCENA module off: «not shown», never zero. */
+  ingresos_ventas: number | null;
   total_vendido: number;
   total_cobrado: number;
-  costo_produccion: number;
-  gastos_operativos: number;
-  cartera_castigada: number;
-  resultado_estimado: number;
-  caja_neta: number;
+  costo_produccion: number | null;
+  gastos_operativos: number | null;
+  cartera_castigada: number | null;
+  resultado_estimado: number | null;
+  caja_neta: number | null;
   leche_litros: number;
   por_pagar_proveedores: number;
 }
@@ -88,7 +91,8 @@ export interface Tablero {
   hoy: TableroHoy;
   /** `null` when today falls in no quincena that was created. */
   quincena: TableroQuincena | null;
-  cartera: TableroCartera;
+  /** `null` when the company has the credit module off. */
+  cartera: TableroCartera | null;
   inventario: TableroInventario;
   proveedores: TableroProveedores;
   alertas: TableroAlertas;

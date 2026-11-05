@@ -1,9 +1,14 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { Location } from '@angular/common';
+import { Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
 import { ApiError, ERROR_SIN_CODIGO } from '../api/api-error';
 import { esRutaAuth } from '../auth/rutas-auth';
+import { CODIGO_EMPRESA_SUSPENDIDA, CODIGO_MODULO_INACTIVO } from '../empresa/empresa.models';
+import { CODIGO_LEGAL_PENDIENTE, RUTA_ACEPTAR_TERMINOS } from '../legal/legal.models';
+import { LegalService } from '../legal/legal.service';
+import { EmpresaService } from '../empresa/empresa.service';
 import { AuthService } from '../services/auth.service';
 
 /** Code of "not authenticated": no token, expired or altered token, wrong credentials or MFA code. */
@@ -26,12 +31,25 @@ const FALLO_DE_CODIGO = /c[oó]digo/i;
  * the page to come back to, with the notice "Tu sesión se cerró…" (it can be another device, idle
  * time or an administrator). `/auth/*` errors are shown as they are.
  *
+ * `20020` (module off for this company): the backend's message is shown once and `/empresa` is read again, so the
+ * menu and the screens redraw without it. Done here, in the one place where API errors are handled.
+ *
+ * `20022` (terms / privacy not accepted in the version in force): NOT a session error. The session stays open and the person
+ * goes ONCE to the acceptance screen, which sends them back to where they were. Not while they are still in the login (the
+ * flow finishes first: change of password, second factor, backup codes), nor if they are already on the screen, nor while
+ * they read a public legal page (`/legal/**`).
+ *
+ * `20021` (company suspended, on any route, `/auth/*` included): the session is cleared without refreshing and the
+ * login shows the suspension notice.
+ *
  * Nothing is logged here on purpose: request URLs carry search text and
  * could expose personal data (Ley 1581).
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  const injector = inject(Injector);
+  const ubicacion = inject(Location);
 
   const sesionTerminada = (error: ApiError): Observable<never> => {
     // Several calls can fail together: only the first one clears the session and goes to the login, once.
@@ -45,6 +63,37 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     return throwError(() => error);
   };
 
+  /**
+   * `20021`: nothing works until the owner reactivates the company, so renewing or retrying is pointless. The session is
+   * dropped locally (the other tabs get the same answer on their next call) and the login shows the notice instead of the form.
+   */
+  const empresaSuspendida = (error: ApiError): Observable<never> => {
+    injector.get(EmpresaService).empresaSuspendida(error.message);
+    const conSesion = auth.isAuthenticated();
+    if (conSesion) auth.limpiarSesion();
+    // Several calls can fail together: only the one that found the session navigates, and never from the login itself.
+    if (conSesion && !router.url.startsWith('/login')) {
+      const destino = router.url;
+      void router.navigate(['/login'], destino !== '/' ? { queryParams: { return: destino } } : {});
+    }
+    return throwError(() => error);
+  };
+
+  const legalPendiente = (error: ApiError): Observable<never> => {
+    const primera = injector.get(LegalService).marcarPendiente();
+    const url = router.url;
+    // The public legal pages (`/legal/**`) must be readable precisely while the terms are not accepted (the footer and the
+    // «Abrir en una pestaña nueva» links open them in a fresh tab, where `/empresa` fails with 20022 on start-up).
+    // On start-up the answer can arrive BEFORE the first navigation ends, when `router.url` is still `/`: the address the
+    // browser really has (`Location`) is checked too.
+    const esLegal = (ruta: string) => ruta === '/legal' || ruta.startsWith('/legal/') || ruta.startsWith('/legal?');
+    const enPaginaLegal = esLegal(url) || esLegal(ubicacion.path());
+    if (primera && auth.isAuthenticated() && !url.startsWith('/login') && !url.startsWith(RUTA_ACEPTAR_TERMINOS) && !enPaginaLegal) {
+      void router.navigate([RUTA_ACEPTAR_TERMINOS], url !== '/' ? { queryParams: { return: url } } : {});
+    }
+    return throwError(() => error);
+  };
+
   const enviar = (peticion: typeof req, esReintento: boolean): Observable<HttpEvent<unknown>> =>
     next(peticion).pipe(
       // A file request that fails answers its JSON `{code, message}` INSIDE a Blob: read it first so the rest sees a normal error.
@@ -54,8 +103,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           return throwError(() => fallo);
         }
         const error = aApiError(fallo);
+        if (error.code === CODIGO_EMPRESA_SUSPENDIDA) return empresaSuspendida(error);
+        if (error.code === CODIGO_LEGAL_PENDIENTE) return legalPendiente(error);
         const tokenVencido = fallo.status === 401 && error.code === NO_AUTENTICADO && !esRutaAuth(peticion.url) && !FALLO_DE_CODIGO.test(error.message);
         if (!tokenVencido) {
+          // The owner switched a module off while the person was working: tell them and read the company data again.
+          if (error.code === CODIGO_MODULO_INACTIVO && !esRutaAuth(peticion.url)) injector.get(EmpresaService).moduloInactivo(error.message);
           return throwError(() => error);
         }
         if (esReintento) {

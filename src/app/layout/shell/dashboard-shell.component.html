@@ -12,10 +12,14 @@
       <app-aviso-respaldo />
       <router-outlet />
     </main>
+    <app-pie-legal />
   </div>
 </div>
 
-<app-asistente-burbuja />
+@if (empresa.activo('ASISTENTE')) {
+  <app-asistente-burbuja />
+}
+<app-theme-customizer />
 <app-toast-host />
 <app-visor-archivos />
 <app-aviso-inactividad />

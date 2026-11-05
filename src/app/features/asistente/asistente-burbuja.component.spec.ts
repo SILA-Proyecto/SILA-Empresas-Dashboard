@@ -2,11 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideNgIconLoader } from '@ng-icons/core';
+import { provideRouter } from '@angular/router';
 import { Subject } from 'rxjs';
 import type { ApiError } from '../../core/api/api-error';
 import { AuthService, type Sesion } from '../../core/services/auth.service';
 import { CanalSesion } from '../../core/session/canal-sesion.service';
-import { AsistenteBurbujaComponent } from './asistente-burbuja.component';
+import { AsistenteBurbujaComponent, CLAVE_AVISO_IA } from './asistente-burbuja.component';
 import { ASISTENTE_REPOSITORY } from './data/asistente.provider';
 import type { MensajeEnviado, RespuestaAsistente } from './models/asistente.models';
 
@@ -17,7 +18,7 @@ describe('AsistenteBurbujaComponent', () => {
   let llamadas: { cuerpo: MensajeEnviado; respuesta: Subject<RespuestaAsistente> }[];
   let auth: AuthService;
 
-  async function crear(sesion: Sesion = ANA): Promise<ComponentFixture<AsistenteBurbujaComponent>> {
+  async function crear(sesion: Sesion = ANA, avisoVisto = true): Promise<ComponentFixture<AsistenteBurbujaComponent>> {
     llamadas = [];
     const repo = {
       preguntar: (cuerpo: MensajeEnviado) => {
@@ -30,6 +31,7 @@ describe('AsistenteBurbujaComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         provideNgIconLoader(async () => ''),
         { provide: ASISTENTE_REPOSITORY, useValue: repo },
         { provide: CanalSesion, useValue: { enviar: () => undefined, escuchar: () => () => undefined } },
@@ -37,6 +39,8 @@ describe('AsistenteBurbujaComponent', () => {
     });
     auth = TestBed.inject(AuthService);
     auth.sesion.set(sesion);
+    // The AI notice has its own tests below; the rest of the tests start with it already read (it only gates SENDING).
+    if (avisoVisto) sessionStorage.setItem(CLAVE_AVISO_IA, String(sesion.id_usuario));
     const f = TestBed.createComponent(AsistenteBurbujaComponent);
     await asentar(f);
     return f;
@@ -333,5 +337,59 @@ describe('AsistenteBurbujaComponent', () => {
 
     expect(todos(f, 'asistente-mensaje-usuario')).toHaveLength(0);
     expect(sessionStorage.getItem('sila_asistente')).toBeNull();
+  });
+
+  describe('aviso de uso de IA', () => {
+    it('la primera vez muestra el aviso con su enlace y una casilla SIN marcar; sin marcarla no se puede enviar', async () => {
+      const f = await crear(ANA, false);
+      await abrir(f);
+      await escribir(f, 'Hola');
+
+      expect(q(f, 'asistente-aviso-ia')).toBeTruthy();
+      expect((q(f, 'asistente-aviso-casilla') as HTMLInputElement).checked).toBe(false);
+      expect(raiz(f).querySelector('[data-testid=asistente-aviso-ia] a')?.getAttribute('href')).toBe('/legal/ia');
+      expect((q(f, 'asistente-enviar') as HTMLButtonElement).disabled).toBe(true);
+      await teclaEnter(f, q(f, 'asistente-texto')!);
+      expect(llamadas).toHaveLength(0);
+    });
+
+    it('un ejemplo tampoco se envía mientras no se marque la casilla', async () => {
+      const f = await crear(ANA, false);
+      await abrir(f);
+
+      await clic(f, 'asistente-ejemplo');
+
+      expect(llamadas).toHaveLength(0);
+    });
+
+    it('al marcarla habilita enviar, el aviso desaparece y queda recordado solo para ese usuario en esta pestaña', async () => {
+      const f = await crear(ANA, false);
+      await abrir(f);
+      const casilla = q(f, 'asistente-aviso-casilla') as HTMLInputElement;
+      casilla.checked = true;
+      casilla.dispatchEvent(new Event('change'));
+      await asentar(f);
+      await escribir(f, 'Hola');
+      await teclaEnter(f, q(f, 'asistente-texto')!);
+
+      expect(q(f, 'asistente-aviso-ia')).toBeNull();
+      expect(llamadas).toHaveLength(1);
+      expect(sessionStorage.getItem(CLAVE_AVISO_IA)).toBe(String(ANA.id_usuario));
+    });
+
+    it('otra persona en la misma pestaña vuelve a ver el aviso', async () => {
+      sessionStorage.setItem(CLAVE_AVISO_IA, String(ANA.id_usuario));
+      const f = await crear(ADMIN, false);
+      await abrir(f);
+
+      expect(q(f, 'asistente-aviso-ia')).toBeTruthy();
+    });
+
+    it('la advertencia «no ingreses datos sensibles ni de menores» está siempre, también con el aviso ya leído', async () => {
+      const f = await crear();
+      await abrir(f);
+
+      expect(texto(f, 'asistente-advertencia')).toContain('No ingreses datos sensibles ni de menores');
+    });
   });
 });

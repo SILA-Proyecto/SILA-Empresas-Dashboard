@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
+import { EmpresaService } from '../../core/empresa/empresa.service';
 import { ClienteSelectorComponent } from '../../shared/ui/cliente-selector/cliente-selector.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header/page-header.component';
@@ -42,6 +43,7 @@ export class PuntoVentaPageComponent {
   private readonly catalogos = inject(CATALOGOS_REPOSITORY);
   private readonly parametros = inject(PARAMETROS_REPOSITORY);
   private readonly errores = inject(ApiErrorService);
+  private readonly empresa = inject(EmpresaService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly buscador = viewChild<ElementRef<HTMLInputElement>>('buscador');
 
@@ -51,6 +53,10 @@ export class PuntoVentaPageComponent {
   protected readonly numero = formatoNumero;
   protected readonly metodos = METODOS_PAGO;
   protected readonly maxPagos = MAX_PAGOS;
+
+  /** Modules the company may not have: without `CREDITO` there is only cash; without `PRECIOS_CLIENTE` there are no agreed prices. */
+  protected readonly creditoActivo = computed(() => this.empresa.activo('CREDITO'));
+  protected readonly preciosClienteActivo = computed(() => this.empresa.activo('PRECIOS_CLIENTE'));
 
   // ---------- Client ----------
   protected readonly consumidorFinal = signal<Cliente | null>(null);
@@ -63,6 +69,7 @@ export class PuntoVentaPageComponent {
   /** Why credit is not available, or `null` when it is. */
   protected readonly motivoSinCredito = computed(() => {
     const c = this.cliente();
+    if (!this.creditoActivo()) return 'Tu empresa no vende a crédito.';
     if (!c) return 'Elige un cliente.';
     if (this.esConsumidorFinal()) return 'El consumidor final solo compra de contado.';
     if (c.limite_credito <= 0) return 'Este cliente no tiene cupo de crédito.';
